@@ -18,6 +18,7 @@ import { usePlayer } from '../contexts/PlayerContext';
 import { editorialPlaylists, genreColors, moods } from '../data/discovery';
 import { colors, radii, spacing, typography } from '../theme';
 import type { Track } from '../types/api';
+import { resolveTrackCoverUrl } from '../utils/artwork';
 import { greetingForHour } from '../utils/format';
 
 interface QuickActionProps {
@@ -156,7 +157,9 @@ export function HomeScreen() {
       <Section title="Hecho para ti" subtitle="Colecciones para empezar a escuchar" horizontal>
         {editorialPlaylists.map((playlist) => {
           const coverTrack = getTrack(playlist.coverTrackId);
-          const cover = coverTrack ? getAlbum(coverTrack.albumId)?.coverUrl : undefined;
+          const cover = coverTrack
+            ? resolveTrackCoverUrl(coverTrack, getAlbum(coverTrack.albumId))
+            : undefined;
           return (
             <MediaCard
               key={playlist.id}

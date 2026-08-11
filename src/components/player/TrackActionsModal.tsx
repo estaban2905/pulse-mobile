@@ -18,6 +18,7 @@ import { useLibrary } from '../../contexts/LibraryContext';
 import { usePlayer } from '../../contexts/PlayerContext';
 import { colors, radii, shadows, spacing, typography } from '../../theme';
 import type { Track } from '../../types/api';
+import { resolveTrackCoverUrl } from '../../utils/artwork';
 import type { IoniconName } from '../ui/IconButton';
 
 interface TrackActionsModalProps {
@@ -72,6 +73,7 @@ export function TrackActionsModal({ track, visible, onClose }: TrackActionsModal
 
   const album = getAlbum(track.albumId);
   const artist = getArtist(track.artistId);
+  const coverUrl = resolveTrackCoverUrl(track, album);
   const favorite = library.isFavorite(track.id);
   const downloaded = Boolean(library.downloadedTracks[track.id]);
   const progress = library.downloadProgress[track.id];
@@ -119,8 +121,8 @@ export function TrackActionsModal({ track, visible, onClose }: TrackActionsModal
           <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
             <View style={styles.trackHeader}>
               <View style={styles.coverFrame}>
-                {album?.coverUrl ? (
-                  <Image contentFit="cover" source={{ uri: album.coverUrl }} style={StyleSheet.absoluteFill} transition={120} />
+                {coverUrl ? (
+                  <Image contentFit="cover" source={{ uri: coverUrl }} style={StyleSheet.absoluteFill} transition={120} />
                 ) : (
                   <Ionicons name="musical-note" color={colors.textDim} size={24} />
                 )}

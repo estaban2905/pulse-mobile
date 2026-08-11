@@ -1,9 +1,12 @@
 {
   "expo": {
     "name": "Pulse Music",
-    "slug": "pulse-music",
+    "slug": "maxi",
     "version": "1.0.0",
-    "platforms": ["android", "ios"],
+    "platforms": [
+      "android",
+      "ios"
+    ],
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "scheme": "pulsemusic",
@@ -52,6 +55,7 @@
           }
         }
       ]
-    ]
+    ],
+    "owner": "maxpobletes-team"
   }
 }

@@ -19,6 +19,7 @@ import { usePlayer } from '../contexts/PlayerContext';
 import { editorialPlaylists } from '../data/discovery';
 import { colors, radii, spacing, typography } from '../theme';
 import type { Track } from '../types/api';
+import { resolveTrackCoverUrl } from '../utils/artwork';
 import { formatDuration } from '../utils/format';
 
 function singleParam(value: string | string[] | undefined): string {
@@ -43,7 +44,9 @@ export function PlaylistScreen() {
   const trackIds = playlist?.trackIds ?? [];
   const tracks = trackIds.map((id) => getTrack(id)).filter((track): track is Track => Boolean(track));
   const coverTrack = getTrack(editorial?.coverTrackId ?? trackIds[0] ?? '');
-  const cover = coverTrack ? getAlbum(coverTrack.albumId)?.coverUrl : undefined;
+  const cover = coverTrack
+    ? resolveTrackCoverUrl(coverTrack, getAlbum(coverTrack.albumId))
+    : undefined;
   const totalDuration = tracks.reduce((sum, track) => sum + track.duration, 0);
   const suggestions = useMemo(() => {
     if (!catalog || !userPlaylist) return [];

@@ -7,6 +7,7 @@ import { useLibrary } from '../../contexts/LibraryContext';
 import { usePlayer } from '../../contexts/PlayerContext';
 import { colors, radii, spacing } from '../../theme';
 import type { Track } from '../../types/api';
+import { resolveTrackCoverUrl } from '../../utils/artwork';
 import { formatTime } from '../../utils/format';
 import { IconButton } from '../ui/IconButton';
 
@@ -34,6 +35,7 @@ export function TrackRow({
   const player = usePlayer();
   const album = getAlbum(track.albumId);
   const artist = getArtist(track.artistId);
+  const coverUrl = resolveTrackCoverUrl(track, album);
   const active = player.current?.id === track.id;
 
   const play = () => {
@@ -60,8 +62,8 @@ export function TrackRow({
         style={({ pressed }) => [styles.main, pressed && styles.pressed]}
       >
         <View style={styles.coverFrame}>
-          {album?.coverUrl ? (
-            <Image contentFit="cover" source={{ uri: album.coverUrl }} style={StyleSheet.absoluteFill} transition={140} />
+          {coverUrl ? (
+            <Image contentFit="cover" source={{ uri: coverUrl }} style={StyleSheet.absoluteFill} transition={140} />
           ) : (
             <Ionicons name="musical-note" color={colors.textDim} size={20} />
           )}

@@ -27,6 +27,7 @@ import { useCatalog } from '../contexts/CatalogContext';
 import { useLibrary } from '../contexts/LibraryContext';
 import { colors, radii, spacing, typography } from '../theme';
 import type { Track } from '../types/api';
+import { resolveTrackCoverUrl } from '../utils/artwork';
 
 type LibraryTab = 'favorites' | 'playlists' | 'albums' | 'artists' | 'downloads' | 'recent';
 
@@ -185,7 +186,9 @@ export function LibraryScreen() {
             <View style={styles.cardGrid}>
               {library.playlists.map((playlist) => {
                 const firstTrack = getTrack(playlist.trackIds[0] ?? '');
-                const cover = firstTrack ? getAlbum(firstTrack.albumId)?.coverUrl : catalog.albums[0]?.coverUrl;
+                const cover = firstTrack
+                  ? resolveTrackCoverUrl(firstTrack, getAlbum(firstTrack.albumId))
+                  : catalog.albums[0]?.coverUrl;
                 return (
                   <MediaCard
                     key={playlist.id}

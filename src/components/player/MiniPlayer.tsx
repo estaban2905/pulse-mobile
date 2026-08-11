@@ -7,6 +7,7 @@ import { useCatalog } from '../../contexts/CatalogContext';
 import { useLibrary } from '../../contexts/LibraryContext';
 import { usePlayer } from '../../contexts/PlayerContext';
 import { colors, radii, shadows, spacing } from '../../theme';
+import { resolveTrackCoverUrl } from '../../utils/artwork';
 import { IconButton } from '../ui/IconButton';
 
 interface MiniPlayerProps {
@@ -25,6 +26,7 @@ export function MiniPlayer({ onPress, bottomOffset = 82 }: MiniPlayerProps) {
 
   const album = getAlbum(track.albumId);
   const artist = getArtist(track.artistId);
+  const coverUrl = resolveTrackCoverUrl(track, album);
   const progress = player.duration > 0
     ? Math.min(1, Math.max(0, player.position / player.duration))
     : 0;
@@ -39,8 +41,8 @@ export function MiniPlayer({ onPress, bottomOffset = 82 }: MiniPlayerProps) {
           style={({ pressed }) => [styles.track, pressed && styles.pressed]}
         >
           <View style={styles.coverFrame}>
-            {album?.coverUrl ? (
-              <Image contentFit="cover" source={{ uri: album.coverUrl }} style={StyleSheet.absoluteFill} transition={120} />
+            {coverUrl ? (
+              <Image contentFit="cover" source={{ uri: coverUrl }} style={StyleSheet.absoluteFill} transition={120} />
             ) : (
               <Ionicons name="musical-note" color={colors.textDim} size={20} />
             )}

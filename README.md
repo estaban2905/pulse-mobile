@@ -47,7 +47,7 @@ El teléfono y el computador deben estar en la misma red Wi-Fi.
 1. Arranca la API en una terminal:
 
    ```powershell
-   cd C:\Users\mpp29\Desktop\mp3\pulse-api
+   cd C:\ruta\al\workspace\pulse-api
    npm.cmd run dev
    ```
 
@@ -66,7 +66,7 @@ El teléfono y el computador deben estar en la misma red Wi-Fi.
 4. Arranca Expo en otra terminal:
 
    ```powershell
-   cd C:\Users\mpp29\Desktop\mp3\pulse-mobile
+   cd C:\ruta\al\workspace\pulse-mobile
    npm.cmd install
    npm.cmd run start:go
    ```
@@ -75,7 +75,7 @@ El teléfono y el computador deben estar en la misma red Wi-Fi.
    descarga desde el computador el APK oficial compatible:
 
    ```powershell
-   cd C:\Users\mpp29\Desktop\mp3\pulse-mobile
+   cd C:\ruta\al\workspace\pulse-mobile
    npx.cmd expo-go download android 57
    ```
 
@@ -129,5 +129,5 @@ debugging. En producción la API debe usar HTTPS.
 El catálogo, las portadas y el streaming vienen de `pulse-api`. Favoritos,
 perfil, playlists, historial, notificaciones y ajustes funcionan hoy de forma
 local en el dispositivo. Para compartir el mismo estado con la web todavía se
-deben implementar los endpoints de usuario/autenticación descritos en
-`PULSE_PRODUCT_PLAN.md`.
+deben implementar los endpoints de usuario/autenticación descritos en el
+[README general](../README.md#próximos-pasos).

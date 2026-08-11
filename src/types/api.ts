@@ -22,6 +22,8 @@ export interface Track {
   duration: number;
   codec: 'MP3' | 'AAC' | 'FLAC';
   streamUrl: string;
+  /** Effective track artwork from newer APIs; absent in older catalog caches. */
+  coverUrl?: string;
 }
 
 export interface Catalog {

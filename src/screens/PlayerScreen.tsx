@@ -15,6 +15,7 @@ import { useCatalog } from '../contexts/CatalogContext';
 import { useLibrary } from '../contexts/LibraryContext';
 import { usePlayer } from '../contexts/PlayerContext';
 import { colors, radii, shadows, spacing, typography } from '../theme';
+import { resolveTrackCoverUrl } from '../utils/artwork';
 
 const timerOptions: Array<{ label: string; minutes: number | null }> = [
   { label: '15 minutos', minutes: 15 },
@@ -34,6 +35,7 @@ export function PlayerScreen() {
   const track = player.current;
   const album = track ? getAlbum(track.albumId) : undefined;
   const artist = track ? getArtist(track.artistId) : undefined;
+  const coverUrl = resolveTrackCoverUrl(track, album);
 
   if (!track) {
     return (
@@ -73,8 +75,8 @@ export function PlayerScreen() {
 
       <View style={styles.content}>
         <View style={styles.artworkFrame}>
-          {album?.coverUrl ? (
-            <Image source={{ uri: album.coverUrl }} contentFit="cover" style={styles.artwork} transition={180} />
+          {coverUrl ? (
+            <Image source={{ uri: coverUrl }} contentFit="cover" style={styles.artwork} transition={180} />
           ) : (
             <View style={[styles.artwork, styles.artworkFallback]}><Text style={styles.artworkGlyph}>♫</Text></View>
           )}

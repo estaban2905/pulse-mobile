@@ -6,6 +6,7 @@ import { useLibrary } from './LibraryContext';
 import { useSettings } from './SettingsContext';
 import type { Track } from '../types/api';
 import type { RepeatMode } from '../types/app';
+import { resolveTrackCoverUrl } from '../utils/artwork';
 
 interface PlayerValue {
   queue: string[];
@@ -83,6 +84,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const current = getTrack(queue[index] ?? '') ?? null;
   const currentSource = current ? (downloadedTracks[current.id] ?? current.streamUrl) : null;
+  const currentAlbum = current ? getAlbum(current.albumId) : undefined;
+  const currentArtist = current ? getArtist(current.artistId) : undefined;
+  const currentArtworkUrl = resolveTrackCoverUrl(current, currentAlbum);
 
   useEffect(() => {
     if (!catalog || restored.current) return;
@@ -158,18 +162,27 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!current || !currentSource) return;
-    const album = getAlbum(current.albumId);
-    const artist = getArtist(current.artistId);
     setAudioError(null);
     audio.replace(currentSource);
+    if (shouldAutoplay.current) audio.play();
+  }, [audio, current?.id, currentSource, loadRevision]);
+
+  useEffect(() => {
+    if (!current) return;
     audio.setActiveForLockScreen(true, {
       title: current.title,
-      artist: artist?.name,
-      albumTitle: album?.title,
-      artworkUrl: album?.coverUrl
+      artist: currentArtist?.name,
+      albumTitle: currentAlbum?.title,
+      artworkUrl: currentArtworkUrl
     }, { showSeekBackward: true, showSeekForward: true });
-    if (shouldAutoplay.current) audio.play();
-  }, [audio, current?.id, currentSource, getAlbum, getArtist, loadRevision]);
+  }, [
+    audio,
+    current?.id,
+    current?.title,
+    currentAlbum?.title,
+    currentArtist?.name,
+    currentArtworkUrl
+  ]);
 
   useEffect(() => {
     if (current && status.playing && lastLogged.current !== current.id && !settings.privateSession) {
