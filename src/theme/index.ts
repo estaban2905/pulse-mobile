@@ -22,6 +22,11 @@ export const colors = {
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 28, xxxl: 36 } as const;
 export const radii = { sm: 8, md: 12, lg: 18, xl: 24, round: 999 } as const;
 
+// Heights exclude device safe-area insets. Consumers add the current inset.
+export const TAB_BAR_BASE_HEIGHT = 70;
+export const MINI_PLAYER_HEIGHT = 66;
+export const PLAYER_OVERLAY_CLEARANCE = MINI_PLAYER_HEIGHT + spacing.xxl;
+
 export const typography = {
   eyebrow: { fontSize: 11, fontWeight: '800', letterSpacing: 1.8 } satisfies TextStyle,
   title: { fontSize: 30, fontWeight: '800', letterSpacing: -0.8 } satisfies TextStyle,

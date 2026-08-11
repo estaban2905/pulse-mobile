@@ -5,11 +5,14 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppProviders } from '../providers/AppProviders';
 import { MiniPlayer } from '../components/player/MiniPlayer';
-import { colors } from '../theme';
+import { colors, spacing, TAB_BAR_BASE_HEIGHT } from '../theme';
+
+const TAB_PATHS = new Set(['/', '/search', '/library', '/profile']);
 
 function NavigationShell() {
   const pathname = usePathname();
   const playerOpen = pathname === '/player';
+  const tabBarVisible = TAB_PATHS.has(pathname);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -32,7 +35,9 @@ function NavigationShell() {
         <Stack.Screen name="notifications" />
         <Stack.Screen name="settings" />
       </Stack>
-      {!playerOpen && <MiniPlayer />}
+      {!playerOpen && (
+        <MiniPlayer bottomOffset={(tabBarVisible ? TAB_BAR_BASE_HEIGHT : 0) + spacing.sm} />
+      )}
     </View>
   );
 }

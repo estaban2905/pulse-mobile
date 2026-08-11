@@ -18,6 +18,7 @@ import { useCatalog } from '../contexts/CatalogContext';
 import { useLibrary } from '../contexts/LibraryContext';
 import { usePlayer } from '../contexts/PlayerContext';
 import { colors, radii, spacing, typography } from '../theme';
+import { goBackOrReplace } from '../navigation/goBack';
 import type { Track } from '../types/api';
 import { formatDuration } from '../utils/format';
 
@@ -49,13 +50,13 @@ export function AlbumScreen() {
   if (!album) {
     return (
       <Screen>
-        <ScreenHeader title="Álbum" onBack={() => router.back()} />
+        <ScreenHeader title="Álbum" onBack={() => goBackOrReplace('/')} />
         <EmptyState
           icon="disc-outline"
           title="Álbum no encontrado"
           description="Puede que ya no esté disponible en el catálogo."
           actionLabel="Volver"
-          onAction={() => router.back()}
+          onAction={() => goBackOrReplace('/')}
         />
       </Screen>
     );
@@ -71,7 +72,7 @@ export function AlbumScreen() {
     <Screen contentContainerStyle={styles.content}>
       <ScreenHeader
         title="Álbum"
-        onBack={() => router.back()}
+        onBack={() => goBackOrReplace('/')}
         right={(
           <IconButton
             name={library.isAlbumSaved(album.id) ? 'bookmark' : 'bookmark-outline'}

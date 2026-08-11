@@ -18,7 +18,7 @@ import {
 import { useCatalog } from '../contexts/CatalogContext';
 import { useLibrary } from '../contexts/LibraryContext';
 import { genreColors } from '../data/discovery';
-import { colors, radii, spacing } from '../theme';
+import { colors, PLAYER_OVERLAY_CLEARANCE, radii, spacing } from '../theme';
 
 type SearchFilter = 'all' | 'tracks' | 'artists' | 'albums';
 
@@ -242,7 +242,7 @@ export function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { paddingBottom: spacing.xxxl, gap: spacing.lg },
+  screen: { paddingBottom: PLAYER_OVERLAY_CLEARANCE, gap: spacing.lg },
   centered: { flex: 1, justifyContent: 'center' },
   searchBox: {
     minHeight: 52,

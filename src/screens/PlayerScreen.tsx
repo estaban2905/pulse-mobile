@@ -1,7 +1,8 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Modal, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, Share, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   EmptyState,
   IconButton,
@@ -15,6 +16,7 @@ import { useCatalog } from '../contexts/CatalogContext';
 import { useLibrary } from '../contexts/LibraryContext';
 import { usePlayer } from '../contexts/PlayerContext';
 import { colors, radii, shadows, spacing, typography } from '../theme';
+import { goBackOrReplace } from '../navigation/goBack';
 import { resolveTrackCoverUrl } from '../utils/artwork';
 
 const timerOptions: Array<{ label: string; minutes: number | null }> = [
@@ -26,6 +28,8 @@ const timerOptions: Array<{ label: string; minutes: number | null }> = [
 ];
 
 export function PlayerScreen() {
+  const insets = useSafeAreaInsets();
+  const window = useWindowDimensions();
   const player = usePlayer();
   const library = useLibrary();
   const { getAlbum, getArtist } = useCatalog();
@@ -36,11 +40,13 @@ export function PlayerScreen() {
   const album = track ? getAlbum(track.albumId) : undefined;
   const artist = track ? getArtist(track.artistId) : undefined;
   const coverUrl = resolveTrackCoverUrl(track, album);
+  const availableHeight = window.height - insets.top - insets.bottom;
+  const artworkSize = Math.max(152, Math.min(390, window.width - spacing.xl * 4, availableHeight - 360));
 
   if (!track) {
     return (
       <Screen scroll={false}>
-        <ScreenHeader title="Reproductor" onBack={() => router.back()} />
+        <ScreenHeader title="Reproductor" onBack={() => goBackOrReplace('/')} />
         <EmptyState
           icon="musical-notes-outline"
           title="Nada reproduciéndose"
@@ -69,16 +75,23 @@ export function PlayerScreen() {
       <ScreenHeader
         eyebrow="REPRODUCIENDO DESDE"
         title={player.contextLabel}
-        onBack={() => router.back()}
+        onBack={() => goBackOrReplace('/')}
         right={<IconButton name="ellipsis-horizontal" onPress={() => setActionsVisible(true)} accessibilityLabel="Más opciones" />}
       />
 
       <View style={styles.content}>
-        <View style={styles.artworkFrame}>
+        <View style={[styles.artworkFrame, { maxHeight: artworkSize }]}>
           {coverUrl ? (
-            <Image source={{ uri: coverUrl }} contentFit="cover" style={styles.artwork} transition={180} />
+            <Image
+              source={{ uri: coverUrl }}
+              contentFit="cover"
+              style={[styles.artwork, { width: artworkSize, height: artworkSize }]}
+              transition={180}
+            />
           ) : (
-            <View style={[styles.artwork, styles.artworkFallback]}><Text style={styles.artworkGlyph}>♫</Text></View>
+            <View style={[styles.artwork, styles.artworkFallback, { width: artworkSize, height: artworkSize }]}>
+              <Text style={styles.artworkGlyph}>♫</Text>
+            </View>
           )}
         </View>
 
@@ -128,9 +141,20 @@ export function PlayerScreen() {
         {player.error ? <Text style={styles.error}>{player.error}</Text> : null}
       </View>
 
-      <Modal visible={timerVisible} transparent animationType="fade" onRequestClose={() => setTimerVisible(false)}>
+      <Modal
+        animationType="fade"
+        navigationBarTranslucent
+        onRequestClose={() => setTimerVisible(false)}
+        presentationStyle="overFullScreen"
+        statusBarTranslucent
+        transparent
+        visible={timerVisible}
+      >
         <Pressable style={styles.backdrop} onPress={() => setTimerVisible(false)}>
-          <Pressable style={styles.sheet} onPress={(event) => event.stopPropagation()}>
+          <Pressable
+            style={[styles.sheet, { paddingBottom: insets.bottom + spacing.xl }]}
+            onPress={(event) => event.stopPropagation()}
+          >
             <View style={styles.handle} />
             <Text style={styles.sheetTitle}>Temporizador</Text>
             <Text style={styles.sheetSubtitle}>Pausa la música automáticamente.</Text>
@@ -180,7 +204,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, paddingBottom: spacing.lg },
   content: { flex: 1, paddingHorizontal: spacing.xl, justifyContent: 'space-between' },
   artworkFrame: { flex: 1, maxHeight: 390, justifyContent: 'center', alignItems: 'center', marginVertical: spacing.md },
-  artwork: { width: '100%', maxWidth: 390, aspectRatio: 1, borderRadius: radii.xl, backgroundColor: colors.surfaceSoft, ...shadows.card },
+  artwork: { borderRadius: radii.xl, backgroundColor: colors.surfaceSoft, ...shadows.card },
   artworkFallback: { alignItems: 'center', justifyContent: 'center' },
   artworkGlyph: { color: colors.accent, fontSize: 86 },
   trackInfo: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.md },

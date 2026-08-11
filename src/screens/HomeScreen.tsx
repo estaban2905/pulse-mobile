@@ -16,7 +16,7 @@ import { useCatalog } from '../contexts/CatalogContext';
 import { useLibrary } from '../contexts/LibraryContext';
 import { usePlayer } from '../contexts/PlayerContext';
 import { editorialPlaylists, genreColors, moods } from '../data/discovery';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, PLAYER_OVERLAY_CLEARANCE, radii, spacing, typography } from '../theme';
 import type { Track } from '../types/api';
 import { resolveTrackCoverUrl } from '../utils/artwork';
 import { greetingForHour } from '../utils/format';
@@ -258,7 +258,7 @@ export function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { paddingBottom: spacing.xxxl, gap: spacing.xxl },
+  screen: { paddingBottom: PLAYER_OVERLAY_CLEARANCE, gap: spacing.xxl },
   centered: { flex: 1, justifyContent: 'center' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   notificationDot: {

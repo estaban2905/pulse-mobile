@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { EmptyState, IconButton, Screen, ScreenHeader } from '../components';
 import { useLibrary } from '../contexts/LibraryContext';
 import { colors, radii, spacing, typography } from '../theme';
+import { goBackOrReplace } from '../navigation/goBack';
 import type { AppNotification } from '../types/app';
 import { relativeDate } from '../utils/format';
 
@@ -23,7 +23,7 @@ export function NotificationsScreen() {
       <ScreenHeader
         eyebrow={unread ? `${unread} SIN LEER` : 'TODO AL DÍA'}
         title="Notificaciones"
-        onBack={() => router.back()}
+        onBack={() => goBackOrReplace('/')}
         right={unread ? (
           <IconButton name="checkmark-done" onPress={library.markAllNotificationsRead} accessibilityLabel="Marcar todas como leídas" />
         ) : undefined}

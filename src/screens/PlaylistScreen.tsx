@@ -18,6 +18,7 @@ import { useLibrary } from '../contexts/LibraryContext';
 import { usePlayer } from '../contexts/PlayerContext';
 import { editorialPlaylists } from '../data/discovery';
 import { colors, radii, spacing, typography } from '../theme';
+import { goBackOrReplace } from '../navigation/goBack';
 import type { Track } from '../types/api';
 import { resolveTrackCoverUrl } from '../utils/artwork';
 import { formatDuration } from '../utils/format';
@@ -65,7 +66,7 @@ export function PlaylistScreen() {
   if (!playlist) {
     return (
       <Screen>
-        <ScreenHeader title="Playlist" onBack={() => router.back()} />
+        <ScreenHeader title="Playlist" onBack={() => goBackOrReplace('/library')} />
         <EmptyState
           icon="list-outline"
           title="Playlist no encontrada"
@@ -115,7 +116,7 @@ export function PlaylistScreen() {
     <Screen contentContainerStyle={styles.content}>
       <ScreenHeader
         title={isEditable ? 'Tu playlist' : 'Playlist editorial'}
-        onBack={() => router.back()}
+        onBack={() => goBackOrReplace('/library')}
         right={isEditable ? (
           <IconButton
             name={editing ? 'close' : 'pencil-outline'}

@@ -11,6 +11,7 @@ import {
   TextInput,
   View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ErrorState,
   IconButton,
@@ -26,7 +27,7 @@ import { useCatalog } from '../contexts/CatalogContext';
 import { useLibrary } from '../contexts/LibraryContext';
 import { usePlayer } from '../contexts/PlayerContext';
 import { useSettings } from '../contexts/SettingsContext';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, PLAYER_OVERLAY_CLEARANCE, radii, spacing, typography } from '../theme';
 
 interface StatCardProps {
   label: string;
@@ -54,6 +55,7 @@ function qualityLabel(value: 'normal' | 'high' | 'very-high'): string {
 }
 
 export function ProfileScreen() {
+  const insets = useSafeAreaInsets();
   const { catalog, loading, error, refresh, getArtist } = useCatalog();
   const library = useLibrary();
   const { settings } = useSettings();
@@ -250,13 +252,21 @@ export function ProfileScreen() {
         </View>
       </Screen>
 
-      <Modal animationType="fade" transparent visible={editOpen} onRequestClose={() => setEditOpen(false)}>
+      <Modal
+        animationType="fade"
+        navigationBarTranslucent
+        onRequestClose={() => setEditOpen(false)}
+        presentationStyle="overFullScreen"
+        statusBarTranslucent
+        transparent
+        visible={editOpen}
+      >
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalRoot}
         >
           <Pressable accessibilityLabel="Cerrar" onPress={() => setEditOpen(false)} style={styles.backdrop} />
-          <View style={styles.modalCard}>
+          <View style={[styles.modalCard, { paddingBottom: insets.bottom + spacing.xxl }]}>
             <View style={styles.modalHeader}>
               <View>
                 <Text style={styles.modalTitle}>Editar perfil</Text>
@@ -312,7 +322,7 @@ export function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { paddingBottom: spacing.xxxl, gap: spacing.xxl },
+  screen: { paddingBottom: PLAYER_OVERLAY_CLEARANCE, gap: spacing.xxl },
   centered: { flex: 1, justifyContent: 'center' },
   profileCard: {
     flexDirection: 'row',
@@ -389,7 +399,7 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.xl,
-    paddingBottom: Platform.OS === 'ios' ? 38 : spacing.xxl,
+    paddingBottom: spacing.xxl,
     borderTopLeftRadius: radii.xl,
     borderTopRightRadius: radii.xl,
     borderTopWidth: 1,

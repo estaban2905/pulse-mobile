@@ -1,9 +1,9 @@
-import { router } from 'expo-router';
 import React from 'react';
 import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
 import { Chip, Screen, ScreenHeader, SettingRow } from '../components';
 import { useSettings } from '../contexts/SettingsContext';
 import { colors, radii, spacing, typography } from '../theme';
+import { goBackOrReplace } from '../navigation/goBack';
 import type { AudioSettings } from '../types/app';
 
 type Quality = AudioSettings['playbackQuality'];
@@ -76,7 +76,7 @@ export function SettingsScreen() {
       <ScreenHeader
         eyebrow="PULSE MUSIC"
         title="Configuración"
-        onBack={() => router.back()}
+        onBack={() => goBackOrReplace('/profile')}
         right={undefined}
       />
 

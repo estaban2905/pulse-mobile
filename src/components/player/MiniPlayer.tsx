@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCatalog } from '../../contexts/CatalogContext';
 import { useLibrary } from '../../contexts/LibraryContext';
 import { usePlayer } from '../../contexts/PlayerContext';
@@ -15,8 +16,9 @@ interface MiniPlayerProps {
   bottomOffset?: number;
 }
 
-export function MiniPlayer({ onPress, bottomOffset = 82 }: MiniPlayerProps) {
+export function MiniPlayer({ onPress, bottomOffset = spacing.sm }: MiniPlayerProps) {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { getAlbum, getArtist } = useCatalog();
   const { isFavorite, toggleFavorite } = useLibrary();
   const player = usePlayer();
@@ -32,7 +34,17 @@ export function MiniPlayer({ onPress, bottomOffset = 82 }: MiniPlayerProps) {
     : 0;
 
   return (
-    <View style={[styles.container, { bottom: bottomOffset }, shadows.card]}>
+    <View
+      style={[
+        styles.container,
+        {
+          bottom: bottomOffset + insets.bottom,
+          left: spacing.sm + insets.left,
+          right: spacing.sm + insets.right
+        },
+        shadows.card
+      ]}
+    >
       <View style={styles.content}>
         <Pressable
           accessibilityLabel="Abrir reproductor"
@@ -94,8 +106,6 @@ const styles = StyleSheet.create({
   container: {
     position: 'absolute',
     zIndex: 40,
-    left: spacing.sm,
-    right: spacing.sm,
     overflow: 'hidden',
     borderRadius: radii.lg,
     borderColor: colors.border,

@@ -12,6 +12,7 @@ import {
   TextInput,
   View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Chip,
   EmptyState,
@@ -25,7 +26,7 @@ import {
 } from '../components';
 import { useCatalog } from '../contexts/CatalogContext';
 import { useLibrary } from '../contexts/LibraryContext';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, PLAYER_OVERLAY_CLEARANCE, radii, spacing, typography } from '../theme';
 import type { Track } from '../types/api';
 import { resolveTrackCoverUrl } from '../utils/artwork';
 
@@ -46,6 +47,7 @@ function tracksFromIds(ids: string[], tracks: Track[]): Track[] {
 }
 
 export function LibraryScreen() {
+  const insets = useSafeAreaInsets();
   const { catalog, loading, error, refresh, getAlbum, getArtist, getTrack } = useCatalog();
   const library = useLibrary();
   const [tab, setTab] = useState<LibraryTab>('favorites');
@@ -290,16 +292,19 @@ export function LibraryScreen() {
 
       <Modal
         animationType="fade"
+        navigationBarTranslucent
+        presentationStyle="overFullScreen"
+        statusBarTranslucent
         transparent
         visible={createOpen}
         onRequestClose={closeCreate}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalRoot}
         >
           <Pressable accessibilityLabel="Cerrar" onPress={closeCreate} style={styles.backdrop} />
-          <View style={styles.modalCard}>
+          <View style={[styles.modalCard, { paddingBottom: insets.bottom + spacing.xxl }]}>
             <View style={styles.modalHeader}>
               <View>
                 <Text style={styles.modalTitle}>Nueva playlist</Text>
@@ -348,7 +353,7 @@ export function LibraryScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { paddingBottom: spacing.xxxl, gap: spacing.lg },
+  screen: { paddingBottom: PLAYER_OVERLAY_CLEARANCE, gap: spacing.lg },
   centered: { flex: 1, justifyContent: 'center' },
   chips: { gap: spacing.sm, paddingRight: spacing.xl },
   trackList: { gap: spacing.xs },
@@ -379,7 +384,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.xl,
-    paddingBottom: Platform.OS === 'ios' ? 38 : spacing.xxl,
+    paddingBottom: spacing.xxl,
     borderTopLeftRadius: radii.xl,
     borderTopRightRadius: radii.xl,
     borderTopWidth: 1,

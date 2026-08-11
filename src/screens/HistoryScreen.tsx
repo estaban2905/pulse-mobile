@@ -14,6 +14,7 @@ import {
 import { useCatalog } from '../contexts/CatalogContext';
 import { useLibrary } from '../contexts/LibraryContext';
 import { colors, spacing, typography } from '../theme';
+import { goBackOrReplace } from '../navigation/goBack';
 import type { Track } from '../types/api';
 import { relativeDate } from '../utils/format';
 
@@ -46,7 +47,7 @@ export function HistoryScreen() {
         eyebrow="TU ACTIVIDAD"
         title="Historial"
         subtitle={entries.length ? `${entries.length} reproducciones recientes` : undefined}
-        onBack={() => router.back()}
+        onBack={() => goBackOrReplace('/')}
         right={entries.length ? (
           <IconButton name="trash-outline" color={colors.danger} onPress={confirmClear} accessibilityLabel="Limpiar historial" />
         ) : undefined}

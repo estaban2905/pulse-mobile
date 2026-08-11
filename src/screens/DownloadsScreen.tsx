@@ -15,6 +15,7 @@ import { useCatalog } from '../contexts/CatalogContext';
 import { useLibrary } from '../contexts/LibraryContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { colors, radii, spacing, typography } from '../theme';
+import { goBackOrReplace } from '../navigation/goBack';
 import type { Track } from '../types/api';
 
 const bitrateByQuality = { normal: 128, high: 256, 'very-high': 320 } as const;
@@ -54,7 +55,7 @@ export function DownloadsScreen() {
         eyebrow="SIN CONEXIÓN"
         title="Descargas"
         subtitle={tracks.length ? `${tracks.length} canciones disponibles sin internet` : undefined}
-        onBack={() => router.back()}
+        onBack={() => goBackOrReplace('/library')}
         right={tracks.length ? (
           <IconButton name="trash-outline" color={colors.danger} onPress={confirmClear} accessibilityLabel="Eliminar todas las descargas" />
         ) : undefined}

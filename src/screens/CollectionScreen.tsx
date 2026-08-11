@@ -18,6 +18,7 @@ import { useLibrary } from '../contexts/LibraryContext';
 import { usePlayer } from '../contexts/PlayerContext';
 import { genreColors, moods } from '../data/discovery';
 import { colors, radii, spacing, typography } from '../theme';
+import { goBackOrReplace } from '../navigation/goBack';
 import type { Track } from '../types/api';
 import { formatDuration } from '../utils/format';
 
@@ -112,7 +113,7 @@ export function CollectionScreen() {
 
   return (
     <Screen contentContainerStyle={styles.content}>
-      <ScreenHeader title="Colección" onBack={() => router.back()} />
+      <ScreenHeader title="Colección" onBack={() => goBackOrReplace('/search')} />
       <View style={[styles.hero, { backgroundColor: `${config.accent}32`, borderColor: `${config.accent}66` }]}>
         <Text style={styles.eyebrow}>{kind === 'genre' ? 'GÉNERO' : kind === 'mood' ? 'PARA TU MOMENTO' : 'TU MÚSICA'}</Text>
         <Text style={styles.title}>{config.title}</Text>

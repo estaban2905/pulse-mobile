@@ -109,6 +109,7 @@ export function TrackActionsModal({ track, visible, onClose }: TrackActionsModal
     <Modal
       animationType="slide"
       onRequestClose={onClose}
+      navigationBarTranslucent
       presentationStyle="overFullScreen"
       statusBarTranslucent
       transparent
@@ -116,7 +117,7 @@ export function TrackActionsModal({ track, visible, onClose }: TrackActionsModal
     >
       <View style={styles.overlay}>
         <Pressable accessibilityLabel="Cerrar opciones" onPress={onClose} style={StyleSheet.absoluteFill} />
-        <View style={[styles.sheet, shadows.card, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
+        <View style={[styles.sheet, shadows.card, { paddingBottom: insets.bottom + spacing.lg }]}>
           <View style={styles.handle} />
           <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
             <View style={styles.trackHeader}>

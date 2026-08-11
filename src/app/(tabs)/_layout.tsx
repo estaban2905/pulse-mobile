@@ -1,7 +1,8 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../../theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors, spacing, TAB_BAR_BASE_HEIGHT } from '../../theme';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -13,17 +14,20 @@ const icons: Record<string, { active: IconName; inactive: IconName }> = {
 };
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tabs
+      backBehavior="history"
       screenOptions={({ route }) => ({
         headerShown: false,
         sceneStyle: { backgroundColor: colors.background },
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textDim,
         tabBarStyle: {
-          height: 70,
+          height: TAB_BAR_BASE_HEIGHT + insets.bottom,
           paddingTop: 7,
-          paddingBottom: 8,
+          paddingBottom: Math.max(insets.bottom, spacing.sm),
           backgroundColor: colors.surface,
           borderTopColor: colors.border
         },

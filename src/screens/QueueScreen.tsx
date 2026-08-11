@@ -13,6 +13,7 @@ import {
 import { useCatalog } from '../contexts/CatalogContext';
 import { usePlayer } from '../contexts/PlayerContext';
 import { colors, radii, spacing, typography } from '../theme';
+import { goBackOrReplace } from '../navigation/goBack';
 import type { Track } from '../types/api';
 
 export function QueueScreen() {
@@ -40,7 +41,7 @@ export function QueueScreen() {
         eyebrow={player.contextLabel.toUpperCase()}
         title="Cola de reproducción"
         subtitle={upcoming.length ? `${upcoming.length} canciones a continuación` : undefined}
-        onBack={() => router.back()}
+        onBack={() => goBackOrReplace('/player')}
         right={upcoming.length ? (
           <IconButton name="trash-outline" color={colors.danger} onPress={confirmClear} accessibilityLabel="Limpiar próximas canciones" />
         ) : undefined}

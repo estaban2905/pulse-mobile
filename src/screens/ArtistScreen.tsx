@@ -19,6 +19,7 @@ import { useCatalog } from '../contexts/CatalogContext';
 import { useLibrary } from '../contexts/LibraryContext';
 import { usePlayer } from '../contexts/PlayerContext';
 import { colors, radii, spacing, typography } from '../theme';
+import { goBackOrReplace } from '../navigation/goBack';
 import type { Track } from '../types/api';
 
 function singleParam(value: string | string[] | undefined): string {
@@ -49,13 +50,13 @@ export function ArtistScreen() {
   if (!artist) {
     return (
       <Screen>
-        <ScreenHeader title="Artista" onBack={() => router.back()} />
+        <ScreenHeader title="Artista" onBack={() => goBackOrReplace('/')} />
         <EmptyState
           icon="person-outline"
           title="Artista no encontrado"
           description="Ese perfil no está disponible en el catálogo."
           actionLabel="Volver"
-          onAction={() => router.back()}
+          onAction={() => goBackOrReplace('/')}
         />
       </Screen>
     );
@@ -74,7 +75,7 @@ export function ArtistScreen() {
         <Image source={{ uri: artist.photoUrl }} contentFit="cover" style={styles.photo} transition={180} />
         <View style={styles.scrim} />
         <View style={styles.headerOverlay}>
-          <ScreenHeader title="" onBack={() => router.back()} />
+          <ScreenHeader title="" onBack={() => goBackOrReplace('/')} />
         </View>
         <View style={styles.artistCopy}>
           <Text style={styles.title}>{artist.name}</Text>

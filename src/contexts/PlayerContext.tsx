@@ -4,6 +4,7 @@ import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-au
 import { useCatalog } from './CatalogContext';
 import { useLibrary } from './LibraryContext';
 import { useSettings } from './SettingsContext';
+import { useCast } from './CastContext';
 import type { Track } from '../types/api';
 import type { RepeatMode } from '../types/app';
 import { resolveTrackCoverUrl } from '../utils/artwork';
@@ -65,6 +66,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const { catalog, getTrack, getAlbum, getArtist } = useCatalog();
   const { downloadedTracks, logPlay } = useLibrary();
   const { settings } = useSettings();
+  const cast = useCast();
   const audio = useAudioPlayer(null, { updateInterval: 400 });
   const status = useAudioPlayerStatus(audio);
   const [queue, setQueue] = useState<string[]>([]);
@@ -81,6 +83,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const restored = useRef(false);
   const pendingSeek = useRef<number | null>(null);
   const storedState = useRef<StoredPlayerState | null>(null);
+  const wasCasting = useRef(false);
+  const lastCastLoadKey = useRef('');
+  const lastCastEndedRevision = useRef(0);
+  const localPlaybackSnapshot = useRef({ isPlaying: false, position: 0 });
+  const castPlaybackSnapshot = useRef({ isPlaying: false, position: 0 });
 
   const current = getTrack(queue[index] ?? '') ?? null;
   const currentSource = current ? (downloadedTracks[current.id] ?? current.streamUrl) : null;
@@ -125,7 +132,20 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { audio.volume = volume; }, [audio, volume]);
   useEffect(() => { audio.loop = repeat === 'one'; }, [audio, repeat]);
-  useEffect(() => { shouldAutoplay.current = status.playing; }, [status.playing]);
+  useEffect(() => {
+    localPlaybackSnapshot.current = {
+      isPlaying: status.playing,
+      position: status.currentTime ?? 0
+    };
+    if (!cast.isConnected) shouldAutoplay.current = status.playing;
+  }, [cast.isConnected, status.currentTime, status.playing]);
+
+  useEffect(() => {
+    castPlaybackSnapshot.current = {
+      isPlaying: cast.isPlaying,
+      position: cast.position
+    };
+  }, [cast.isPlaying, cast.position]);
 
   useEffect(() => {
     if (status.isLoaded && pendingSeek.current !== null) {
@@ -140,12 +160,12 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       queue,
       index,
       contextLabel,
-      position: status.currentTime ?? 0,
+      position: cast.isConnected ? cast.position : (status.currentTime ?? 0),
       volume,
       shuffle,
       repeat
     };
-  }, [contextLabel, index, queue, repeat, shuffle, status.currentTime, volume]);
+  }, [cast.isConnected, cast.position, contextLabel, index, queue, repeat, shuffle, status.currentTime, volume]);
 
   useEffect(() => {
     const save = () => {
@@ -161,14 +181,84 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    const connectedBefore = wasCasting.current;
+
+    if (cast.isConnected) {
+      wasCasting.current = true;
+      if (!current) return;
+
+      const loadKey = `${current.id}:${loadRevision}`;
+      if (connectedBefore && lastCastLoadKey.current === loadKey) return;
+
+      const initialHandoff = !connectedBefore;
+      const startTime = initialHandoff ? localPlaybackSnapshot.current.position : 0;
+      const autoplay = initialHandoff
+        ? localPlaybackSnapshot.current.isPlaying
+        : shouldAutoplay.current;
+
+      shouldAutoplay.current = autoplay;
+      audio.pause();
+      audio.setActiveForLockScreen(false);
+      lastCastLoadKey.current = loadKey;
+
+      const contentType = current.codec === 'AAC'
+        ? 'audio/aac'
+        : current.codec === 'FLAC'
+          ? 'audio/flac'
+          : 'audio/mpeg';
+
+      void cast.loadTrack({
+        trackId: current.id,
+        title: current.title,
+        artist: currentArtist?.name,
+        album: currentAlbum?.title,
+        streamUrl: current.streamUrl,
+        coverUrl: currentArtworkUrl,
+        duration: current.duration,
+        contentType,
+        startTime,
+        autoplay
+      });
+      return;
+    }
+
+    if (connectedBefore) {
+      const remote = castPlaybackSnapshot.current;
+      wasCasting.current = false;
+      lastCastLoadKey.current = '';
+      pendingSeek.current = Math.max(0, remote.position);
+      shouldAutoplay.current = remote.isPlaying;
+      setLoadRevision((revision) => revision + 1);
+    }
+  }, [
+    audio,
+    cast.isConnected,
+    cast.loadTrack,
+    current?.codec,
+    current?.duration,
+    current?.id,
+    current?.streamUrl,
+    current?.title,
+    currentAlbum?.title,
+    currentArtist?.name,
+    currentArtworkUrl,
+    loadRevision
+  ]);
+
+  useEffect(() => {
     if (!current || !currentSource) return;
+    if (cast.isConnected) return;
     setAudioError(null);
     audio.replace(currentSource);
     if (shouldAutoplay.current) audio.play();
-  }, [audio, current?.id, currentSource, loadRevision]);
+  }, [audio, cast.isConnected, current?.id, currentSource, loadRevision]);
 
   useEffect(() => {
     if (!current) return;
+    if (cast.isConnected) {
+      audio.setActiveForLockScreen(false);
+      return;
+    }
     audio.setActiveForLockScreen(true, {
       title: current.title,
       artist: currentArtist?.name,
@@ -177,6 +267,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }, { showSeekBackward: true, showSeekForward: true });
   }, [
     audio,
+    cast.isConnected,
     current?.id,
     current?.title,
     currentAlbum?.title,
@@ -185,11 +276,12 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   ]);
 
   useEffect(() => {
-    if (current && status.playing && lastLogged.current !== current.id && !settings.privateSession) {
+    const playing = cast.isConnected ? cast.isPlaying : status.playing;
+    if (current && playing && lastLogged.current !== current.id && !settings.privateSession) {
       lastLogged.current = current.id;
       logPlay(current.id);
     }
-  }, [current, logPlay, settings.privateSession, status.playing]);
+  }, [cast.isConnected, cast.isPlaying, current, logPlay, settings.privateSession, status.playing]);
 
   const next = useCallback(() => {
     if (!queue.length) return;
@@ -205,29 +297,44 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     shouldAutoplay.current = false;
-    audio.pause();
-  }, [audio, index, queue.length, repeat, settings.autoplay]);
+    if (cast.isConnected) void cast.pause();
+    else audio.pause();
+  }, [audio, cast, index, queue.length, repeat, settings.autoplay]);
 
   useEffect(() => {
-    if (status.didJustFinish && repeat !== 'one') next();
-  }, [next, repeat, status.didJustFinish]);
+    if (!cast.isConnected && status.didJustFinish && repeat !== 'one') next();
+  }, [cast.isConnected, next, repeat, status.didJustFinish]);
+
+  useEffect(() => {
+    if (cast.playbackEndedRevision === lastCastEndedRevision.current) return;
+    lastCastEndedRevision.current = cast.playbackEndedRevision;
+    if (!cast.isConnected) return;
+    if (repeat === 'one') {
+      shouldAutoplay.current = true;
+      setLoadRevision((revision) => revision + 1);
+    } else {
+      next();
+    }
+  }, [cast.isConnected, cast.playbackEndedRevision, next, repeat]);
 
   useEffect(() => {
     if (!sleepEndsAt) return;
     const remaining = sleepEndsAt - Date.now();
     if (remaining <= 0) {
       shouldAutoplay.current = false;
-      audio.pause();
+      if (cast.isConnected) void cast.pause();
+      else audio.pause();
       setSleepEndsAt(null);
       return;
     }
     const timer = setTimeout(() => {
       shouldAutoplay.current = false;
-      audio.pause();
+      if (cast.isConnected) void cast.pause();
+      else audio.pause();
       setSleepEndsAt(null);
     }, remaining);
     return () => clearTimeout(timer);
-  }, [audio, sleepEndsAt]);
+  }, [audio, cast, sleepEndsAt]);
 
   const playTracks = useCallback((trackIds: string[], startIndex = 0, label = 'Reproduciendo') => {
     const valid = trackIds.filter((id) => Boolean(getTrack(id)));
@@ -244,31 +351,45 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, [getTrack, shuffle]);
 
   const previous = useCallback(() => {
-    if ((status.currentTime ?? 0) > 4) {
-      void audio.seekTo(0);
+    if (!queue.length) return;
+
+    if (index > 0) {
+      shouldAutoplay.current = cast.isConnected ? cast.isPlaying : status.playing;
+      setIndex((value) => Math.max(0, value - 1));
       return;
     }
-    if (index > 0) {
-      shouldAutoplay.current = true;
-      setIndex((value) => value - 1);
-    } else {
-      void audio.seekTo(0);
+
+    if (repeat === 'all' && queue.length > 1) {
+      shouldAutoplay.current = cast.isConnected ? cast.isPlaying : status.playing;
+      setIndex(queue.length - 1);
+      return;
     }
-  }, [audio, index, status.currentTime]);
+
+    if (cast.isConnected) void cast.seek(0);
+    else void audio.seekTo(0);
+  }, [audio, cast, index, queue.length, repeat, status.playing]);
+
+  const effectiveIsPlaying = cast.isConnected ? cast.isPlaying : status.playing;
+  const effectiveIsBuffering = cast.isConnected ? cast.isBuffering : status.isBuffering;
+  const effectivePosition = cast.isConnected ? cast.position : (status.currentTime ?? 0);
+  const effectiveDuration = cast.isConnected
+    ? (cast.duration || current?.duration || 0)
+    : (status.duration || current?.duration || 0);
+  const effectiveVolume = cast.isConnected ? cast.volume : volume;
 
   const value = useMemo<PlayerValue>(() => ({
     queue,
     index,
     current,
     contextLabel,
-    isPlaying: status.playing,
-    isBuffering: status.isBuffering,
-    position: status.currentTime ?? 0,
-    duration: status.duration || current?.duration || 0,
-    volume,
+    isPlaying: effectiveIsPlaying,
+    isBuffering: effectiveIsBuffering,
+    position: effectivePosition,
+    duration: effectiveDuration,
+    volume: effectiveVolume,
     shuffle,
     repeat,
-    error: status.error ?? audioError,
+    error: cast.error ?? status.error ?? audioError,
     sleepEndsAt,
     playTracks,
     playTrack: (trackId, label = 'Reproduciendo') => playTracks([trackId], 0, label),
@@ -276,18 +397,28 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       if (!current) {
         const ids = catalog?.tracks.map((track) => track.id) ?? [];
         playTracks(ids, 0, 'Tu colección local');
-      } else if (status.playing) {
+      } else if (effectiveIsPlaying) {
         shouldAutoplay.current = false;
-        audio.pause();
+        if (cast.isConnected) void cast.pause();
+        else audio.pause();
       } else {
         shouldAutoplay.current = true;
-        audio.play();
+        if (cast.isConnected) void cast.play();
+        else audio.play();
       }
     },
     next,
     previous,
-    seek: (seconds) => { void audio.seekTo(Math.max(0, Math.min(seconds, status.duration || current?.duration || 0))); },
-    setVolume: (value) => setVolumeState(Math.max(0, Math.min(1, value))),
+    seek: (seconds) => {
+      const target = Math.max(0, Math.min(seconds, effectiveDuration));
+      if (cast.isConnected) void cast.seek(target);
+      else void audio.seekTo(target);
+    },
+    setVolume: (value) => {
+      const target = Math.max(0, Math.min(1, value));
+      setVolumeState(target);
+      if (cast.isConnected) void cast.setVolume(target);
+    },
     toggleShuffle: () => setShuffle((value) => !value),
     cycleRepeat: () => setRepeat((value) => value === 'off' ? 'all' : value === 'all' ? 'one' : 'off'),
     addToQueue: (trackIds) => setQueue((currentQueue) => [...currentQueue, ...trackIds.filter((id) => !currentQueue.includes(id) && Boolean(getTrack(id)))]),
@@ -314,7 +445,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     },
     clearUpcoming: () => setQueue((currentQueue) => currentQueue.slice(0, index + 1)),
     setSleepTimer: (minutes) => setSleepEndsAt(minutes ? Date.now() + minutes * 60_000 : null)
-  }), [audio, audioError, catalog?.tracks, contextLabel, current, getTrack, index, next, playTracks, previous, queue, repeat, shuffle, sleepEndsAt, status.currentTime, status.duration, status.error, status.isBuffering, status.playing, volume]);
+  }), [audio, audioError, cast, catalog?.tracks, contextLabel, current, effectiveDuration, effectiveIsBuffering, effectiveIsPlaying, effectivePosition, effectiveVolume, getTrack, index, next, playTracks, previous, queue, repeat, shuffle, sleepEndsAt, status.error]);
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
 }
