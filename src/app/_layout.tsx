@@ -13,6 +13,9 @@ function NavigationShell() {
   const pathname = usePathname();
   const playerOpen = pathname === '/player';
   const tabBarVisible = TAB_PATHS.has(pathname);
+  // El mini reproductor no pinta nada sobre el formulario de acceso: tapa el
+  // último campo y sugiere una sesión que todavía no existe.
+  const chromeHidden = playerOpen || pathname === '/login';
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -24,6 +27,7 @@ function NavigationShell() {
         }}
       >
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="login" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="player" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
         <Stack.Screen name="queue" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
         <Stack.Screen name="album/[id]" />
@@ -35,7 +39,7 @@ function NavigationShell() {
         <Stack.Screen name="notifications" />
         <Stack.Screen name="settings" />
       </Stack>
-      {!playerOpen && (
+      {!chromeHidden && (
         <MiniPlayer bottomOffset={(tabBarVisible ? TAB_BAR_BASE_HEIGHT : 0) + spacing.sm} />
       )}
     </View>

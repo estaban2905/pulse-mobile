@@ -23,8 +23,10 @@ import {
   SettingRow,
   TrackRow
 } from '../components';
+import { useAuth } from '../contexts/AuthContext';
 import { useCatalog } from '../contexts/CatalogContext';
 import { useLibrary } from '../contexts/LibraryContext';
+import { ApiError } from '../services/api';
 import { usePlayer } from '../contexts/PlayerContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { colors, PLAYER_OVERLAY_CLEARANCE, radii, spacing, typography } from '../theme';
@@ -60,9 +62,11 @@ export function ProfileScreen() {
   const library = useLibrary();
   const { settings } = useSettings();
   const player = usePlayer();
+  const { user, signOut, updateProfile } = useAuth();
   const [editOpen, setEditOpen] = useState(false);
-  const [draftName, setDraftName] = useState(library.profile.name);
-  const [draftEmail, setDraftEmail] = useState(library.profile.email);
+  const [draftName, setDraftName] = useState(user?.displayName ?? '');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const followedArtists = useMemo(
     () => library.followedArtistIds.map((id) => getArtist(id)).filter((artist) => Boolean(artist)),
@@ -70,17 +74,25 @@ export function ProfileScreen() {
   );
 
   const openEdit = () => {
-    setDraftName(library.profile.name);
-    setDraftEmail(library.profile.email);
+    setDraftName(user?.displayName ?? '');
+    setSaveError('');
     setEditOpen(true);
   };
 
-  const saveProfile = () => {
-    const name = draftName.trim();
-    const email = draftEmail.trim();
-    if (!name || !email) return;
-    library.updateProfile({ name, email });
-    setEditOpen(false);
+  const saveProfile = async () => {
+    const displayName = draftName.trim();
+    if (!displayName || saving) return;
+
+    setSaving(true);
+    setSaveError('');
+    try {
+      await updateProfile({ displayName });
+      setEditOpen(false);
+    } catch (caught) {
+      setSaveError(caught instanceof ApiError ? caught.message : 'No se pudo guardar. Inténtalo de nuevo.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading && !catalog) {
@@ -101,7 +113,7 @@ export function ProfileScreen() {
 
   if (!catalog) return null;
 
-  const initials = library.profile.name
+  const initials = (user?.displayName ?? '')
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
@@ -128,12 +140,8 @@ export function ProfileScreen() {
             <Text style={styles.avatarText}>{initials}</Text>
           </View>
           <View style={styles.profileCopy}>
-            <Text numberOfLines={1} style={styles.profileName}>{library.profile.name}</Text>
-            <Text numberOfLines={1} style={styles.profileEmail}>{library.profile.email}</Text>
-            <View style={styles.planPill}>
-              <Ionicons name="sparkles" size={12} color={colors.accent} />
-              <Text style={styles.planText}>Pulse {library.profile.plan}</Text>
-            </View>
+            <Text numberOfLines={1} style={styles.profileName}>{user?.displayName}</Text>
+            <Text numberOfLines={1} style={styles.profileEmail}>{user?.email}</Text>
           </View>
           <IconButton
             name="pencil-outline"
@@ -192,7 +200,7 @@ export function ProfileScreen() {
             <SettingRow
               icon="person-outline"
               title="Editar perfil"
-              description="Nombre y correo electrónico"
+              description="El nombre con el que apareces"
               onPress={openEdit}
             />
             <SettingRow
@@ -244,12 +252,14 @@ export function ProfileScreen() {
           </View>
         </Section>
 
-        <View style={styles.demoNotice}>
-          <Ionicons name="information-circle-outline" size={18} color={colors.textMuted} />
-          <Text style={styles.demoNoticeText}>
-            Este perfil se guarda localmente en el dispositivo. La sincronización de cuentas llegará cuando se conecte el backend de usuarios.
-          </Text>
-        </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => void signOut()}
+          style={({ pressed }) => [styles.signOut, pressed && styles.pressed]}
+        >
+          <Ionicons name="log-out-outline" size={18} color={colors.danger} />
+          <Text style={styles.signOutLabel}>Cerrar sesión</Text>
+        </Pressable>
       </Screen>
 
       <Modal
@@ -270,7 +280,7 @@ export function ProfileScreen() {
             <View style={styles.modalHeader}>
               <View>
                 <Text style={styles.modalTitle}>Editar perfil</Text>
-                <Text style={styles.modalSubtitle}>Estos datos se guardan en este dispositivo.</Text>
+                <Text style={styles.modalSubtitle}>Se guarda en tu cuenta, no solo en este teléfono.</Text>
               </View>
               <IconButton name="close" accessibilityLabel="Cerrar" onPress={() => setEditOpen(false)} />
             </View>
@@ -290,29 +300,27 @@ export function ProfileScreen() {
             </View>
             <View>
               <Text style={styles.inputLabel}>Correo electrónico</Text>
-              <TextInput
-                accessibilityLabel="Correo electrónico"
-                autoCapitalize="none"
-                keyboardType="email-address"
-                maxLength={100}
-                onChangeText={setDraftEmail}
-                placeholder="tu@correo.com"
-                placeholderTextColor={colors.textDim}
-                style={styles.input}
-                value={draftEmail}
-              />
+              {/* Solo de lectura: el correo es la identidad con la que se inicia
+                  sesión, y cambiarlo exige comprobar antes el buzón nuevo. */}
+              <View style={[styles.input, styles.inputReadOnly]}>
+                <Text numberOfLines={1} style={styles.inputReadOnlyText}>{user?.email}</Text>
+                <Ionicons name="lock-closed-outline" size={14} color={colors.textDim} />
+              </View>
             </View>
+
+            {saveError ? <Text style={styles.saveError}>{saveError}</Text> : null}
+
             <Pressable
               accessibilityRole="button"
-              disabled={!draftName.trim() || !draftEmail.trim()}
-              onPress={saveProfile}
+              disabled={!draftName.trim() || saving}
+              onPress={() => void saveProfile()}
               style={({ pressed }) => [
                 styles.saveButton,
-                (!draftName.trim() || !draftEmail.trim()) && styles.disabled,
+                (!draftName.trim() || saving) && styles.disabled,
                 pressed && styles.pressed
               ]}
             >
-              <Text style={styles.saveButtonLabel}>Guardar cambios</Text>
+              <Text style={styles.saveButtonLabel}>{saving ? 'Guardando…' : 'Guardar cambios'}</Text>
             </Pressable>
           </View>
         </KeyboardAvoidingView>
@@ -346,18 +354,6 @@ const styles = StyleSheet.create({
   profileCopy: { flex: 1, minWidth: 0 },
   profileName: { color: colors.text, fontSize: 20, fontWeight: '800' },
   profileEmail: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
-  planPill: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radii.round,
-    backgroundColor: 'rgba(169,152,255,0.14)'
-  },
-  planText: { color: colors.accent, fontSize: 10, fontWeight: '800' },
   stats: { flexDirection: 'row', gap: spacing.sm },
   statCard: {
     flex: 1,
@@ -377,15 +373,18 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     backgroundColor: colors.surface
   },
-  demoNotice: {
+  signOut: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.sm,
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface
+    paddingVertical: spacing.md + 2,
+    borderRadius: radii.round,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 115, 125, 0.28)',
+    backgroundColor: 'rgba(255, 115, 125, 0.08)'
   },
-  demoNoticeText: { ...typography.caption, flex: 1, color: colors.textMuted },
+  signOutLabel: { color: colors.danger, fontSize: 14, fontWeight: '800' },
   modalRoot: { flex: 1, justifyContent: 'flex-end' },
   backdrop: {
     position: 'absolute',
@@ -421,6 +420,15 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 15
   },
+  inputReadOnly: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    backgroundColor: colors.background
+  },
+  inputReadOnlyText: { flex: 1, color: colors.textMuted, fontSize: 15 },
+  saveError: { ...typography.caption, color: colors.danger },
   saveButton: {
     alignItems: 'center',
     paddingVertical: 14,

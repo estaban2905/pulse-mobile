@@ -17,7 +17,6 @@ import {
 } from '../components';
 import { useCatalog } from '../contexts/CatalogContext';
 import { useLibrary } from '../contexts/LibraryContext';
-import { genreColors } from '../data/discovery';
 import { colors, PLAYER_OVERLAY_CLEARANCE, radii, spacing } from '../theme';
 
 type SearchFilter = 'all' | 'tracks' | 'artists' | 'albums';
@@ -38,7 +37,7 @@ function normalize(value: string): string {
 }
 
 export function SearchScreen() {
-  const { catalog, loading, error, refresh, getArtist } = useCatalog();
+  const { catalog, loading, error, refresh, getArtist, genres } = useCatalog();
   const { recentSearches, addRecentSearch, removeRecentSearch, clearRecentSearches } = useLibrary();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<SearchFilter>('all');
@@ -160,19 +159,21 @@ export function SearchScreen() {
             </Section>
           ) : null}
 
-          <Section title="Explorar géneros" subtitle="Encuentra algo según tu estilo">
-            <View style={styles.genreGrid}>
-              {Object.entries(genreColors).map(([genre, color]) => (
-                <Pressable
-                  key={genre}
-                  onPress={() => router.push({ pathname: '/collection/[kind]/[id]', params: { kind: 'genre', id: genre } })}
-                  style={({ pressed }) => [styles.genreCard, { backgroundColor: color }, pressed && styles.pressed]}
-                >
-                  <Text style={styles.genreTitle}>{genre}</Text>
-                </Pressable>
-              )).slice(0, 8)}
-            </View>
-          </Section>
+          {genres.length > 0 ? (
+            <Section title="Explorar géneros" subtitle="Encuentra algo según tu estilo">
+              <View style={styles.genreGrid}>
+                {genres.slice(0, 8).map((genre) => (
+                  <Pressable
+                    key={genre.id}
+                    onPress={() => router.push({ pathname: '/collection/[kind]/[id]', params: { kind: 'genre', id: genre.slug } })}
+                    style={({ pressed }) => [styles.genreCard, { backgroundColor: genre.color }, pressed && styles.pressed]}
+                  >
+                    <Text style={styles.genreTitle}>{genre.name}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </Section>
+          ) : null}
         </>
       ) : total === 0 ? (
         <EmptyState

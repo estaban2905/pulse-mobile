@@ -4,6 +4,15 @@ export interface HistoryEntry { id: string; trackId: string; playedAt: string; }
 
 export interface UserPlaylist {
   id: string;
+  /**
+   * UUID de la misma playlist en el servidor, cuando ya se subió.
+   *
+   * Va aparte y no sustituye a `id` porque el identificador local ya está en
+   * uso —la pantalla abierta, la navegación— y cambiarlo por el del servidor
+   * rompería el enlace que el usuario está viendo. Ausente en las creadas sin
+   * conexión, que es justo lo que las marca como pendientes de subir.
+   */
+  remoteId?: string;
   title: string;
   description: string;
   trackIds: string[];

@@ -16,7 +16,6 @@ import {
 import { useCatalog } from '../contexts/CatalogContext';
 import { useLibrary } from '../contexts/LibraryContext';
 import { usePlayer } from '../contexts/PlayerContext';
-import { editorialPlaylists } from '../data/discovery';
 import { colors, radii, spacing, typography } from '../theme';
 import { goBackOrReplace } from '../navigation/goBack';
 import type { Track } from '../types/api';
@@ -30,7 +29,7 @@ function singleParam(value: string | string[] | undefined): string {
 export function PlaylistScreen() {
   const params = useLocalSearchParams<{ id?: string | string[]; playlistId?: string | string[] }>();
   const playlistId = singleParam(params.id ?? params.playlistId);
-  const { catalog, loading, error, refresh, getTrack, getAlbum } = useCatalog();
+  const { catalog, loading, error, refresh, getTrack, getAlbum, getEditorialPlaylist } = useCatalog();
   const library = useLibrary();
   const player = usePlayer();
   const [editing, setEditing] = useState(false);
@@ -38,16 +37,18 @@ export function PlaylistScreen() {
   const [draftDescription, setDraftDescription] = useState('');
   const [actionTrack, setActionTrack] = useState<Track | null>(null);
 
-  const editorial = editorialPlaylists.find((item) => item.id === playlistId);
+  const editorial = getEditorialPlaylist(playlistId);
   const userPlaylist = library.playlists.find((item) => item.id === playlistId);
   const playlist = editorial ?? userPlaylist;
   const isEditable = Boolean(userPlaylist);
   const trackIds = playlist?.trackIds ?? [];
   const tracks = trackIds.map((id) => getTrack(id)).filter((track): track is Track => Boolean(track));
-  const coverTrack = getTrack(editorial?.coverTrackId ?? trackIds[0] ?? '');
-  const cover = coverTrack
-    ? resolveTrackCoverUrl(coverTrack, getAlbum(coverTrack.albumId))
-    : undefined;
+  // La portada de una editorial la pone quien la edita en el servidor; si no
+  // hay, se cae a la de su primera canción, igual que las del usuario.
+  const coverTrack = getTrack(trackIds[0] ?? '');
+  const cover =
+    editorial?.coverUrl ??
+    (coverTrack ? resolveTrackCoverUrl(coverTrack, getAlbum(coverTrack.albumId)) : undefined);
   const totalDuration = tracks.reduce((sum, track) => sum + track.duration, 0);
   const suggestions = useMemo(() => {
     if (!catalog || !userPlaylist) return [];
@@ -99,7 +100,7 @@ export function PlaylistScreen() {
   };
   const copyEditorial = () => {
     if (!editorial) return;
-    const id = library.createPlaylist(editorial.title, editorial.description);
+    const id = library.createPlaylist(editorial.title, editorial.description ?? undefined);
     editorial.trackIds.forEach((trackId) => library.addTrackToPlaylist(id, trackId));
     Alert.alert('Playlist guardada', 'Se creó una copia editable en tu biblioteca.', [
       { text: 'Seguir aquí' },

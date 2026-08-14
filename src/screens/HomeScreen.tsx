@@ -12,10 +12,10 @@ import {
   Section,
   TrackRow
 } from '../components';
+import { useAuth } from '../contexts/AuthContext';
 import { useCatalog } from '../contexts/CatalogContext';
 import { useLibrary } from '../contexts/LibraryContext';
 import { usePlayer } from '../contexts/PlayerContext';
-import { editorialPlaylists, genreColors, moods } from '../data/discovery';
 import { colors, PLAYER_OVERLAY_CLEARANCE, radii, spacing, typography } from '../theme';
 import type { Track } from '../types/api';
 import { resolveTrackCoverUrl } from '../utils/artwork';
@@ -55,8 +55,20 @@ function uniqueHistoryTracks(history: Array<{ trackId: string }>, tracks: Track[
 }
 
 export function HomeScreen() {
-  const { catalog, loading, error, refresh, getAlbum, getArtist, getTrack } = useCatalog();
-  const { profile, history, favoriteTrackIds, followedArtistIds, notifications } = useLibrary();
+  const {
+    catalog,
+    loading,
+    error,
+    refresh,
+    getAlbum,
+    getArtist,
+    getTrack,
+    genres,
+    moods,
+    editorialPlaylists
+  } = useCatalog();
+  const { history, favoriteTrackIds, followedArtistIds, notifications } = useLibrary();
+  const { user } = useAuth();
   const player = usePlayer();
 
   const recentTracks = useMemo(
@@ -102,12 +114,15 @@ export function HomeScreen() {
 
   const unread = notifications.filter((notification) => !notification.read).length;
   const allTrackIds = catalog.tracks.map((track) => track.id);
+  // Sin sesión no hay a quién saludar por su nombre. El perfil inventado que
+  // había antes saludaba a "Pulse Listener" en el teléfono de cualquiera.
+  const greetingName = user?.displayName.split(' ')[0] || 'Pulse';
 
   return (
     <Screen contentContainerStyle={styles.screen}>
       <ScreenHeader
         eyebrow={greetingForHour()}
-        title={profile.name.split(' ')[0] || 'Pulse'}
+        title={greetingName}
         right={(
           <View style={styles.headerActions}>
             <View>
@@ -154,24 +169,28 @@ export function HomeScreen() {
         </Section>
       ) : null}
 
+      {editorialPlaylists.length > 0 ? (
       <Section title="Hecho para ti" subtitle="Colecciones para empezar a escuchar" horizontal>
         {editorialPlaylists.map((playlist) => {
-          const coverTrack = getTrack(playlist.coverTrackId);
-          const cover = coverTrack
-            ? resolveTrackCoverUrl(coverTrack, getAlbum(coverTrack.albumId))
-            : undefined;
+          // La portada la decide quien edita la playlist en el servidor. Si no
+          // eligió ninguna, se cae a la de su primera canción.
+          const firstTrack = getTrack(playlist.trackIds[0] ?? '');
+          const cover =
+            playlist.coverUrl ??
+            (firstTrack ? resolveTrackCoverUrl(firstTrack, getAlbum(firstTrack.albumId)) : undefined);
           return (
             <MediaCard
               key={playlist.id}
               image={cover ?? ''}
               title={playlist.title}
-              subtitle={playlist.description}
+              subtitle={playlist.description ?? undefined}
               large
               onPress={() => router.push({ pathname: '/playlist/[id]', params: { id: playlist.id } })}
             />
           );
         })}
       </Section>
+      ) : null}
 
       <Section title="Canciones recomendadas" subtitle="Una selección de tu catálogo">
         <View style={styles.trackList}>
@@ -212,38 +231,44 @@ export function HomeScreen() {
         ))}
       </Section>
 
-      <Section title="Música para tu día" subtitle="Elige un ambiente">
-        <View style={styles.collectionGrid}>
-          {moods.map((mood) => (
-            <Pressable
-              key={mood.id}
-              onPress={() => router.push({ pathname: '/collection/[kind]/[id]', params: { kind: 'mood', id: mood.id } })}
-              style={({ pressed }) => [
-                styles.collectionCard,
-                { backgroundColor: `${mood.color}2B`, borderColor: `${mood.color}88` },
-                pressed && styles.pressed
-              ]}
-            >
-              <Text style={styles.collectionTitle}>{mood.name}</Text>
-              <Text numberOfLines={2} style={styles.collectionDescription}>{mood.description}</Text>
-            </Pressable>
-          ))}
-        </View>
-      </Section>
+      {/* Las secciones editoriales desaparecen si el servidor no manda nada, en
+          vez de dejar un título sobre una rejilla vacía. */}
+      {moods.length > 0 ? (
+        <Section title="Música para tu día" subtitle="Elige un ambiente">
+          <View style={styles.collectionGrid}>
+            {moods.map((mood) => (
+              <Pressable
+                key={mood.id}
+                onPress={() => router.push({ pathname: '/collection/[kind]/[id]', params: { kind: 'mood', id: mood.slug } })}
+                style={({ pressed }) => [
+                  styles.collectionCard,
+                  { backgroundColor: `${mood.color}2B`, borderColor: `${mood.color}88` },
+                  pressed && styles.pressed
+                ]}
+              >
+                <Text style={styles.collectionTitle}>{mood.name}</Text>
+                <Text numberOfLines={2} style={styles.collectionDescription}>{mood.description}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </Section>
+      ) : null}
 
-      <Section title="Explorar géneros">
-        <View style={styles.collectionGrid}>
-          {Object.entries(genreColors).map(([genre, color]) => (
-            <Pressable
-              key={genre}
-              onPress={() => router.push({ pathname: '/collection/[kind]/[id]', params: { kind: 'genre', id: genre } })}
-              style={({ pressed }) => [styles.genreCard, { backgroundColor: color }, pressed && styles.pressed]}
-            >
-              <Text style={styles.genreTitle}>{genre}</Text>
-            </Pressable>
-          ))}
-        </View>
-      </Section>
+      {genres.length > 0 ? (
+        <Section title="Explorar géneros">
+          <View style={styles.collectionGrid}>
+            {genres.map((genre) => (
+              <Pressable
+                key={genre.id}
+                onPress={() => router.push({ pathname: '/collection/[kind]/[id]', params: { kind: 'genre', id: genre.slug } })}
+                style={({ pressed }) => [styles.genreCard, { backgroundColor: genre.color }, pressed && styles.pressed]}
+              >
+                <Text style={styles.genreTitle}>{genre.name}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </Section>
+      ) : null}
 
       <Pressable
         accessibilityRole="button"

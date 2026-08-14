@@ -16,7 +16,6 @@ import {
 import { useCatalog } from '../contexts/CatalogContext';
 import { useLibrary } from '../contexts/LibraryContext';
 import { usePlayer } from '../contexts/PlayerContext';
-import { genreColors, moods } from '../data/discovery';
 import { colors, radii, spacing, typography } from '../theme';
 import { goBackOrReplace } from '../navigation/goBack';
 import type { Track } from '../types/api';
@@ -44,7 +43,7 @@ export function CollectionScreen() {
   const rawId = singleParam(params.id);
   const kind = (rawKind || (['favorites', 'favourites', 'new'].includes(rawId) ? rawId : 'mood')).toLowerCase();
   const id = rawKind ? rawId : (['favorites', 'favourites', 'new'].includes(rawId) ? '' : rawId);
-  const { catalog, loading, error, refresh, getTrack, getArtist } = useCatalog();
+  const { catalog, loading, error, refresh, getTrack, getArtist, getGenre, getMood } = useCatalog();
   const library = useLibrary();
   const player = usePlayer();
   const [actionTrack, setActionTrack] = useState<Track | null>(null);
@@ -61,16 +60,21 @@ export function CollectionScreen() {
       };
     }
     if (kind === 'genre') {
-      const requested = clean(id).toLocaleLowerCase('es');
-      const canonicalGenre = Object.keys(genreColors).find((genre) => genre.toLocaleLowerCase('es') === requested) ?? clean(id);
+      // La ruta lleva el `slug`, pero los enlaces antiguos llevaban el nombre;
+      // `getGenre` acepta los dos. Si no hay género con ese identificador se usa
+      // lo que venga en la ruta, que al menos filtra por algo.
+      const genre = getGenre(clean(id));
+      const canonicalGenre = genre?.name ?? clean(id);
+      const needle = canonicalGenre.toLocaleLowerCase('es');
       const trackIds = catalog?.tracks.filter((track) => {
+        if (track.genre?.toLocaleLowerCase('es') === needle) return true;
         const artist = getArtist(track.artistId);
-        return artist?.genres.some((genre) => genre.toLocaleLowerCase('es') === canonicalGenre.toLocaleLowerCase('es'));
+        return artist?.genres.some((item) => item.toLocaleLowerCase('es') === needle);
       }).map((track) => track.id) ?? [];
       return {
         title: canonicalGenre || 'Género',
         subtitle: 'Canciones y artistas del género',
-        accent: genreColors[canonicalGenre] ?? colors.accentStrong,
+        accent: genre?.color ?? colors.accentStrong,
         trackIds,
         newReleases: false
       };
@@ -84,7 +88,7 @@ export function CollectionScreen() {
         newReleases: true
       };
     }
-    const mood = moods.find((item) => item.id === id);
+    const mood = getMood(clean(id));
     return {
       title: mood?.name ?? 'Colección',
       subtitle: mood?.description ?? 'Música seleccionada para este momento',
@@ -92,7 +96,7 @@ export function CollectionScreen() {
       trackIds: mood?.trackIds ?? [],
       newReleases: false
     };
-  }, [catalog?.tracks, getArtist, id, kind, library.favoriteTrackIds]);
+  }, [catalog?.tracks, getArtist, getGenre, getMood, id, kind, library.favoriteTrackIds]);
 
   const tracks = config.trackIds.map((trackId) => getTrack(trackId)).filter((track): track is Track => Boolean(track));
   const queue = tracks.map((track) => track.id);
