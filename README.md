@@ -7,6 +7,24 @@ AsyncStorage y descargas reales con Expo FileSystem.
 > Esta es una app React Native nativa, no la web dentro de un WebView. Para
 > instalarla sin Expo Go, sigue [ANDROID_RELEASE.md](./ANDROID_RELEASE.md).
 
+## De dónde viene cada cosa
+
+La app solo habla con `pulse-api`, pero no todo llega de ahí:
+
+| Qué | De dónde llega |
+|---|---|
+| Catálogo, sesión, biblioteca | `pulse-api` en Render |
+| **Los MP3** | **Cloudflare R2**, no el API |
+| **Las portadas** | **Cloudflare R2**, URL pública |
+
+Al reproducir, la app pide `/tracks/:id/stream` y recibe un **302** hacia una URL
+temporal y firmada de R2. `expo-audio` sigue la redirección solo, y las descargas
+de Expo FileSystem también. El audio nunca pasa por el servidor.
+
+Un detalle que le toca solo a esta app: al no ser un navegador, no manda cabecera
+`Origin`, así que la lista `CORS_ORIGINS` del API no la afecta. Si la web no
+carga por CORS pero la móvil sí, es exactamente esto y no un problema de red.
+
 ## Funcionalidades incluidas
 
 - Tabs reales: Inicio, Buscar, Biblioteca y Perfil.
@@ -36,13 +54,37 @@ src/
   types/        contratos de API y estado local
 ```
 
-## Probar en un teléfono físico
+## La variable
+
+Una sola, y quién la pone depende de cómo arranques:
+
+| Cómo arrancas | De dónde sale `EXPO_PUBLIC_API_URL` |
+|---|---|
+| `npm run start:go`, `npm run android` | de `.env` |
+| `npm run build:apk` y demás builds de EAS | de **`eas.json`**, que no lee `.env` |
+
+En `eas.json` los perfiles `preview` y `production` ya apuntan al API
+desplegado. El perfil `production` además **falla el build** si la URL no es
+HTTPS: lo comprueba `app.config.js`, porque Play Store no acepta tráfico en
+claro y es mejor enterarse al construir que al publicar.
+
+Contra el API desplegado, en `.env`:
+
+```dotenv
+EXPO_PUBLIC_API_URL=https://pulse-api-mq9p.onrender.com/v1
+```
+
+Con esto no hace falta ni red Wi-Fi compartida ni tener la API encendida: el
+teléfono va a internet directamente.
+
+## Probar contra una API local
+
+Solo si necesitas la API en tu máquina. El teléfono y el computador deben estar
+en la misma red Wi-Fi.
 
 Esta sección usa Expo Go únicamente como prueba rápida durante el desarrollo.
 Para probar el APK autónomo que se instala desde Android, usa
 `npm.cmd run build:apk` como se explica en `ANDROID_RELEASE.md`.
-
-El teléfono y el computador deben estar en la misma red Wi-Fi.
 
 1. Arranca la API en una terminal:
 
@@ -122,12 +164,19 @@ npm.cmd run android
 ```
 
 Ese comando necesita Android Studio/emulador o un teléfono Android con USB
-debugging. En producción la API debe usar HTTPS.
+debugging.
 
 ## Estado de sincronización
 
-El catálogo, las portadas y el streaming vienen de `pulse-api`. Favoritos,
-perfil, playlists, historial, notificaciones y ajustes funcionan hoy de forma
-local en el dispositivo. Para compartir el mismo estado con la web todavía se
-deben implementar los endpoints de usuario/autenticación descritos en el
-[README general](../README.md#próximos-pasos).
+El catálogo y el streaming vienen de `pulse-api`; los archivos, de R2.
+
+Favoritos, perfil, playlists, historial, notificaciones y ajustes siguen
+funcionando **en el dispositivo**, aunque el API ya tiene los endpoints para
+sincronizarlos: `/auth/*` para la sesión y `/me/*` para biblioteca, playlists,
+historial y preferencias. Falta conectarlos desde esta app.
+
+Cuando se haga, esta app no usa cookies: mandando la cabecera
+`X-Pulse-Client: native` el API devuelve el refresh token en el cuerpo en lugar
+de plantarlo en una cookie `httpOnly`, que es lo único que un navegador sabe
+hacer y lo que aquí no serviría de nada. Eso ya está resuelto en
+[`src/services/api.ts`](./src/services/api.ts).
