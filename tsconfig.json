@@ -2,10 +2,19 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
-    "noEmit": true
+    "noEmit": true,
+    /* Debe coincidir con `extraNodeModules` de `metro.config.js`. Sin `baseUrl`:
+       está deprecado en TypeScript 6 y `paths` ya resuelve contra este fichero. */
+    "paths": {
+      "@pulse/core": ["../pulse-core/src/index.ts"]
+    }
   },
   "include": [
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx",
+    "../pulse-core/src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
   ]
 }

@@ -63,6 +63,12 @@ export interface Mood {
   trackIds: string[];
 }
 
+/** Una línea de letra. `time` es 0 en todas cuando la letra no está sincronizada. */
+export interface LyricLine {
+  time: number;
+  text: string;
+}
+
 /** Playlist de Pulse, no del usuario: las suyas viven en `LibraryContext`. */
 export interface EditorialPlaylist {
   id: string;

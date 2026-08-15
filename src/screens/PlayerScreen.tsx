@@ -6,11 +6,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   EmptyState,
   IconButton,
+  LyricsModal,
   PlayerControls,
   ProgressBar,
   Screen,
   ScreenHeader,
-  TrackActionsModal
+  TrackActionsModal,
+  TvCastButton
 } from '../components';
 import { useCatalog } from '../contexts/CatalogContext';
 import { useLibrary } from '../contexts/LibraryContext';
@@ -35,6 +37,7 @@ export function PlayerScreen() {
   const { getAlbum, getArtist } = useCatalog();
   const [timerVisible, setTimerVisible] = useState(false);
   const [actionsVisible, setActionsVisible] = useState(false);
+  const [lyricsVisible, setLyricsVisible] = useState(false);
 
   const track = player.current;
   const album = track ? getAlbum(track.albumId) : undefined;
@@ -76,7 +79,15 @@ export function PlayerScreen() {
         eyebrow="REPRODUCIENDO DESDE"
         title={player.contextLabel}
         onBack={() => goBackOrReplace('/')}
-        right={<IconButton name="ellipsis-horizontal" onPress={() => setActionsVisible(true)} accessibilityLabel="Más opciones" />}
+        right={
+          // El selector de dispositivos vive aquí y no en la fila de utilidades
+          // porque en Android el botón lo dibuja el propio módulo de Cast: es
+          // suyo, y tiene que estar donde el sistema espera encontrarlo.
+          <View style={styles.headerActions}>
+            <TvCastButton />
+            <IconButton name="ellipsis-horizontal" onPress={() => setActionsVisible(true)} accessibilityLabel="Más opciones" />
+          </View>
+        }
       />
 
       <View style={styles.content}>
@@ -119,6 +130,14 @@ export function PlayerScreen() {
         <PlayerControls />
 
         <View style={styles.utilityRow}>
+          <View style={styles.utilityItem}>
+            <IconButton
+              name="chatbox-ellipses-outline"
+              onPress={() => setLyricsVisible(true)}
+              accessibilityLabel="Ver la letra"
+            />
+            <Text style={styles.utilityLabel}>Letra</Text>
+          </View>
           <View style={styles.utilityItem}>
             <IconButton
               name="moon-outline"
@@ -196,6 +215,8 @@ export function PlayerScreen() {
       </Modal>
 
       <TrackActionsModal track={track} visible={actionsVisible} onClose={() => setActionsVisible(false)} />
+
+      <LyricsModal visible={lyricsVisible} onClose={() => setLyricsVisible(false)} />
     </Screen>
   );
 }
@@ -211,8 +232,11 @@ const styles = StyleSheet.create({
   trackCopy: { flex: 1 },
   trackTitle: { color: colors.text, fontSize: 23, fontWeight: '800', letterSpacing: -0.4 },
   artist: { ...typography.body, color: colors.textMuted, marginTop: spacing.xs },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   utilityRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: spacing.md },
-  utilityItem: { width: 90, alignItems: 'center' },
+  // `flex` y no un ancho fijo: con cuatro utilidades, 90 puntos cada una se
+  // salían de la pantalla en los teléfonos de 360 de ancho.
+  utilityItem: { flex: 1, alignItems: 'center' },
   utilityLabel: { ...typography.caption, color: colors.textDim, marginTop: spacing.xs, textAlign: 'center' },
   utilityActive: { color: colors.accent },
   error: { ...typography.caption, color: colors.danger, textAlign: 'center', marginTop: spacing.sm },
