@@ -45,7 +45,7 @@
       [
         "react-native-google-cast",
         {
-          "receiverAppId": "CC1AD845",
+          "receiverAppId": "F7B92831",
           "expandedController": true,
           "iosStartDiscoveryAfterFirstTapOnCastButton": true,
           "iosSuspendSessionsWhenBackgrounded": false
