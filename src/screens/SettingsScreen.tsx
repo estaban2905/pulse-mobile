@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import React from 'react';
 import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
 import { Chip, Screen, ScreenHeader, SettingRow } from '../components';
@@ -98,6 +99,15 @@ export function SettingsScreen() {
           title="Ahorro de datos"
           description="Reduce automáticamente el consumo en redes móviles."
           right={<Toggle label="Ahorro de datos" value={settings.dataSaver} onChange={(value) => setSetting('dataSaver', value)} />}
+        />
+      </Group>
+
+      <Group title="Televisores">
+        <SettingRow
+          icon="tv-outline"
+          title="Vincular un televisor"
+          description="Para televisores sin Google Cast, como Samsung o LG."
+          onPress={() => router.push('/tv')}
         />
       </Group>
 
