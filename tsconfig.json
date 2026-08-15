@@ -3,16 +3,14 @@
   "compilerOptions": {
     "strict": true,
     "noEmit": true,
-    /* Debe coincidir con `extraNodeModules` de `metro.config.js`. Sin `baseUrl`:
-       está deprecado en TypeScript 6 y `paths` ya resuelve contra este fichero. */
+    /* Debe coincidir con `extraNodeModules` de `metro.config.js`. */
     "paths": {
-      "@pulse/core": ["../pulse-core/src/index.ts"]
+      "@pulse/core": ["./packages/core/src/index.ts"]
     }
   },
   "include": [
     "**/*.ts",
-    "**/*.tsx",
-    "../pulse-core/src/**/*.ts"
+    "**/*.tsx"
   ],
   "exclude": [
     "node_modules"
