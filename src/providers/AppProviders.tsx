@@ -5,7 +5,6 @@ import { CastProvider } from '../contexts/CastContext';
 import { LibraryProvider } from '../contexts/LibraryContext';
 import { PlayerProvider } from '../contexts/PlayerContext';
 import { SettingsProvider } from '../contexts/SettingsContext';
-import { NowPlayingReporter } from '../services/tv/NowPlayingReporter';
 
 /**
  * `AuthProvider` va el primero porque es de quien dependerán los demás: la
@@ -20,9 +19,6 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
           <LibraryProvider>
             <CastProvider>
               <PlayerProvider>
-                {/* No dibuja nada: informa al servidor de qué suena, para que
-                    un televisor sin Google Cast pueda pintarlo. */}
-                <NowPlayingReporter />
                 {children}
               </PlayerProvider>
             </CastProvider>

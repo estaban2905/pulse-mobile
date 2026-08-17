@@ -11,6 +11,13 @@ import { apiRequest } from '../api';
  * controla televisores, y el receptor tiene su propio cliente del otro lado.
  */
 
+/** Lo que el mando del televisor le pide al teléfono. */
+export interface TvCommand {
+  action: 'play' | 'pause' | 'next' | 'previous' | 'seek' | 'shuffle' | 'repeat' | 'volume';
+  /** Segundos para `seek`, 0-100 para `volume`. Nulo en el resto. */
+  value: number | null;
+}
+
 export interface TvScreen {
   id: string;
   name: string;
@@ -32,6 +39,14 @@ export const tvApi = {
 
   unlink: (sessionId: string): Promise<void> =>
     apiRequest<void>(`/me/tv/${encodeURIComponent(sessionId)}`, { method: 'DELETE' }),
+
+  /**
+   * Recoge lo que pidió el mando del televisor.
+   *
+   * El servidor las entrega y las borra a la vez, así que una pausa no se puede
+   * aplicar dos veces aunque dos peticiones se crucen.
+   */
+  commands: (): Promise<TvCommand[]> => apiRequest<TvCommand[]>('/me/tv/commands'),
 
   /** Informa de qué suena. Sin ruido: solo en los cambios que importan. */
   report: (trackId: string, positionMs: number, isPlaying: boolean): Promise<void> =>

@@ -1,223 +1,42 @@
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState
-} from 'react';
-import { NativeModules, Platform } from 'react-native';
-import type { RemoteMediaClient } from 'react-native-google-cast';
+import React, { createContext, useContext } from 'react';
 
-interface CastTrackRequest {
-  trackId: string;
-  title: string;
-  artist?: string;
-  album?: string;
-  streamUrl: string;
-  coverUrl?: string;
-  duration?: number;
-  contentType: string;
-  startTime: number;
-  autoplay: boolean;
-}
+/**
+ * Contexto simplificado para TV.
+ *
+ * La versión simple usa tvApi (código de 6 dígitos) y NowPlayingReporter,
+ * no Google Cast. Este contexto solo existe para no romper imports.
+ */
 
-interface CastSnapshot {
-  isPlaying: boolean;
-  isBuffering: boolean;
-  position: number;
-  duration: number;
-  volume: number;
-}
-
-interface CastValue extends CastSnapshot {
-  isAvailable: boolean;
-  isConnected: boolean;
-  deviceName: string | null;
-  error: string | null;
-  playbackEndedRevision: number;
-  loadTrack: (request: CastTrackRequest) => Promise<void>;
+interface CastValue {
+  isAvailable: false;
+  isConnected: false;
+  deviceName: null;
+  error: null;
+  loadTrack: () => Promise<void>;
   play: () => Promise<void>;
   pause: () => Promise<void>;
-  seek: (seconds: number) => Promise<void>;
-  setVolume: (volume: number) => Promise<void>;
+  seek: () => Promise<void>;
+  setVolume: () => Promise<void>;
   showCastDialog: () => Promise<void>;
 }
 
-type GoogleCastModule = typeof import('react-native-google-cast');
-
-const nativeCastAvailable = Boolean(
-  NativeModules.RNGCCastContext
-  && NativeModules.RNGCSessionManager
-  && NativeModules.RNGCRemoteMediaClient
-);
-
-// Expo Go does not include the Google Cast native module. Keeping this require
-// behind a native-module check lets the rest of Pulse keep running there, while
-// standalone/development builds get the complete Cast implementation.
-const GoogleCast: GoogleCastModule | null = nativeCastAvailable
-  ? require('react-native-google-cast') as GoogleCastModule
-  : null;
-
-const initialSnapshot: CastSnapshot = {
-  isPlaying: false,
-  isBuffering: false,
-  position: 0,
-  duration: 0,
-  volume: 0.8
-};
-
 const fallbackValue: CastValue = {
-  ...initialSnapshot,
   isAvailable: false,
   isConnected: false,
   deviceName: null,
   error: null,
-  playbackEndedRevision: 0,
-  loadTrack: async () => undefined,
-  play: async () => undefined,
-  pause: async () => undefined,
-  seek: async () => undefined,
-  setVolume: async () => undefined,
-  showCastDialog: async () => undefined
+  loadTrack: async () => {},
+  play: async () => {},
+  pause: async () => {},
+  seek: async () => {},
+  setVolume: async () => {},
+  showCastDialog: async () => {}
 };
 
 const CastContext = createContext<CastValue>(fallbackValue);
 
-function errorMessage(reason: unknown): string {
-  return reason instanceof Error ? reason.message : 'No se pudo comunicar con la TV.';
-}
-
-function NativeCastProvider({ children }: { children: React.ReactNode }) {
-  if (!GoogleCast) return <CastContext.Provider value={fallbackValue}>{children}</CastContext.Provider>;
-
-  const client = GoogleCast.useRemoteMediaClient();
-  const device = GoogleCast.useCastDevice();
-  const mediaStatus = GoogleCast.useMediaStatus();
-  const streamPosition = GoogleCast.useStreamPosition(0.5);
-  const [snapshot, setSnapshot] = useState<CastSnapshot>(initialSnapshot);
-  const [error, setError] = useState<string | null>(null);
-  const [playbackEndedRevision, setPlaybackEndedRevision] = useState(0);
-
-  useEffect(() => {
-    if (Platform.OS !== 'android') return;
-    void GoogleCast.CastContext.getPlayServicesState()
-      .then((state) => {
-        if (state && state !== GoogleCast.PlayServicesState.SUCCESS) {
-          setError('Google Play Services no esta disponible o necesita actualizarse.');
-        }
-      })
-      .catch((reason: unknown) => setError(errorMessage(reason)));
-  }, []);
-
-  useEffect(() => {
-    if (!mediaStatus) return;
-    setSnapshot((current) => ({
-      ...current,
-      isPlaying: mediaStatus.playerState === GoogleCast.MediaPlayerState.PLAYING,
-      isBuffering:
-        mediaStatus.playerState === GoogleCast.MediaPlayerState.BUFFERING
-        || mediaStatus.playerState === GoogleCast.MediaPlayerState.LOADING,
-      position: mediaStatus.streamPosition ?? current.position,
-      duration: mediaStatus.mediaInfo?.streamDuration ?? current.duration,
-      volume: mediaStatus.volume ?? current.volume
-    }));
-  }, [mediaStatus]);
-
-  useEffect(() => {
-    if (streamPosition === null) return;
-    setSnapshot((current) => ({ ...current, position: streamPosition }));
-  }, [streamPosition]);
-
-  useEffect(() => {
-    if (!client) return;
-    const subscription = client.onMediaPlaybackEnded(() => {
-      setSnapshot((current) => ({ ...current, isPlaying: false, isBuffering: false }));
-      setPlaybackEndedRevision((revision) => revision + 1);
-    });
-    return () => subscription.remove();
-  }, [client]);
-
-  const run = useCallback(async (operation: (remote: RemoteMediaClient) => Promise<void>) => {
-    if (!client) {
-      setError('Selecciona una TV antes de enviar musica.');
-      return;
-    }
-    try {
-      setError(null);
-      await operation(client);
-    } catch (reason) {
-      setError(errorMessage(reason));
-    }
-  }, [client]);
-
-  const loadTrack = useCallback(async (request: CastTrackRequest) => {
-    if (!/^https?:\/\//i.test(request.streamUrl)) {
-      setError('La TV necesita una URL HTTP o HTTPS accesible desde la red.');
-      return;
-    }
-
-    setSnapshot((current) => ({
-      ...current,
-      isPlaying: request.autoplay,
-      isBuffering: true,
-      position: request.startTime,
-      duration: request.duration ?? current.duration
-    }));
-
-    await run((remote) => remote.loadMedia({
-      autoplay: request.autoplay,
-      startTime: Math.max(0, request.startTime),
-      mediaInfo: {
-        contentId: request.trackId,
-        contentUrl: request.streamUrl,
-        contentType: request.contentType,
-        streamDuration: request.duration,
-        customData: { trackId: request.trackId },
-        metadata: {
-          type: 'musicTrack',
-          title: request.title,
-          artist: request.artist,
-          albumTitle: request.album,
-          images: request.coverUrl && /^https?:\/\//i.test(request.coverUrl)
-            ? [{ url: request.coverUrl }]
-            : undefined
-        }
-      }
-    }));
-  }, [run]);
-
-  const value = useMemo<CastValue>(() => ({
-    ...snapshot,
-    isAvailable: true,
-    isConnected: Boolean(client),
-    deviceName: device?.friendlyName ?? null,
-    error,
-    playbackEndedRevision,
-    loadTrack,
-    play: () => run((remote) => remote.play()),
-    pause: () => run((remote) => remote.pause()),
-    seek: (seconds) => run((remote) => remote.seek({ position: Math.max(0, seconds) })),
-    setVolume: (volume) => run((remote) => remote.setStreamVolume(Math.max(0, Math.min(1, volume)))),
-    showCastDialog: async () => {
-      try {
-        setError(null);
-        const shown = await GoogleCast.CastContext.showCastDialog();
-        if (!shown) setError('No se pudo abrir el selector de dispositivos.');
-      } catch (reason) {
-        setError(errorMessage(reason));
-      }
-    }
-  }), [client, device?.friendlyName, error, loadTrack, playbackEndedRevision, run, snapshot]);
-
-  return <CastContext.Provider value={value}>{children}</CastContext.Provider>;
-}
-
 export function CastProvider({ children }: { children: React.ReactNode }) {
-  if (!nativeCastAvailable) {
-    return <CastContext.Provider value={fallbackValue}>{children}</CastContext.Provider>;
-  }
-  return <NativeCastProvider>{children}</NativeCastProvider>;
+  return <CastContext.Provider value={fallbackValue}>{children}</CastContext.Provider>;
 }
 
 export function useCast(): CastValue {
@@ -225,6 +44,5 @@ export function useCast(): CastValue {
 }
 
 export function getNativeCastButton() {
-  return GoogleCast?.CastButton ?? null;
+  return null;
 }
-

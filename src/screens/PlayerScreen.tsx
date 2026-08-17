@@ -6,11 +6,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   EmptyState,
   IconButton,
-  LyricsModal,
   PlayerControls,
   ProgressBar,
   Screen,
   ScreenHeader,
+  SongSheetModal,
   TrackActionsModal,
   TvCastButton
 } from '../components';
@@ -134,7 +134,7 @@ export function PlayerScreen() {
             <IconButton
               name="chatbox-ellipses-outline"
               onPress={() => setLyricsVisible(true)}
-              accessibilityLabel="Ver la letra"
+              accessibilityLabel="Ver la letra y los acordes"
             />
             <Text style={styles.utilityLabel}>Letra</Text>
           </View>
@@ -216,7 +216,7 @@ export function PlayerScreen() {
 
       <TrackActionsModal track={track} visible={actionsVisible} onClose={() => setActionsVisible(false)} />
 
-      <LyricsModal visible={lyricsVisible} onClose={() => setLyricsVisible(false)} />
+      <SongSheetModal visible={lyricsVisible} onClose={() => setLyricsVisible(false)} />
     </Screen>
   );
 }

@@ -46,3 +46,31 @@ export { createLibrarySync, mergeIds } from './librarySync';
 
 export type { LyricsApi, LyricsResult, LyricsStatus } from './lyricsApi';
 export { createLyricsApi } from './lyricsApi';
+
+export type {
+  ChordEvent,
+  ChordPlacement,
+  ChordSheetLine,
+  ChordsApi,
+  ChordsResult,
+  ChordsStatus
+} from './chordsApi';
+export { createChordsApi } from './chordsApi';
+
+export type { ChordParts, MergedLine, PlacedChord, TransposeOptions } from './chords';
+export {
+  activeChordIndex,
+  capoShift,
+  chordLine,
+  mergeLyricsWithChords,
+  parseChord,
+  prefersFlats,
+  transposeKey,
+  transposeLabel,
+  transposeSheet,
+  transposeTimeline,
+  uniqueChords
+} from './chords';
+
+export type { ChordShape } from './chordShapes';
+export { FRETS_SHOWN, guitarShape, shapePitches } from './chordShapes';
