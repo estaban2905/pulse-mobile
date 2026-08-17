@@ -12,8 +12,7 @@ import {
   ScreenHeader,
   SongSheetModal,
   TrackActionsModal,
-  TvCastButton,
-  TvShareModal
+  TvCastButton
 } from '../components';
 import { useCatalog } from '../contexts/CatalogContext';
 import { useLibrary } from '../contexts/LibraryContext';
@@ -218,7 +217,6 @@ export function PlayerScreen() {
       <TrackActionsModal track={track} visible={actionsVisible} onClose={() => setActionsVisible(false)} />
 
       <SongSheetModal visible={lyricsVisible} onClose={() => setLyricsVisible(false)} />
-      <TvShareModal />
     </Screen>
   );
 }

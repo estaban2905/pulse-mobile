@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { usePlayer } from '../../contexts/PlayerContext';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { getNativeCastButton, useCast } from '../../contexts/CastContext';
 import { colors, radii, spacing, typography } from '../../theme';
 
 interface TvCastButtonProps {
@@ -9,28 +9,44 @@ interface TvCastButtonProps {
 }
 
 export function TvCastButton({ showLabel = false }: TvCastButtonProps) {
-  const { current, setTvShareVisible } = usePlayer();
-  const isPlaying = !!current;
+  const cast = useCast();
+  const NativeCastButton = getNativeCastButton();
+  const label = cast.isConnected ? (cast.deviceName ?? 'TV conectada') : 'Conectar TV';
 
-  const handlePress = () => {
-    if (isPlaying) {
-      setTvShareVisible(true);
-    }
-  };
+  if (!cast.isAvailable || !NativeCastButton) {
+    return (
+      <Pressable
+        accessibilityLabel="Google Cast requiere instalar el APK"
+        accessibilityRole="button"
+        onPress={() => Alert.alert(
+          'Google Cast requiere el APK',
+          'Expo Go no incluye el modulo nativo de Google Cast. Instala el proximo APK preview de Pulse Music para conectarte a la TV.'
+        )}
+        style={({ pressed }) => [styles.control, pressed && styles.pressed]}
+      >
+        <View style={styles.iconFrame}>
+          <Ionicons color={colors.textMuted} name="tv-outline" size={22} />
+        </View>
+        {showLabel ? <Text numberOfLines={1} style={styles.label}>{label}</Text> : null}
+      </Pressable>
+    );
+  }
 
   return (
-    <Pressable
-      accessibilityLabel="Compartir con TV"
-      accessibilityRole="button"
-      disabled={!isPlaying}
-      onPress={handlePress}
-      style={({ pressed }) => [styles.control, pressed && styles.pressed, !isPlaying && styles.disabled]}
-    >
-      <View style={styles.iconFrame}>
-        <Ionicons color={isPlaying ? colors.accent : colors.textMuted} name="tv-outline" size={22} />
+    <View accessibilityLabel={label} style={styles.control}>
+      <View style={[styles.iconFrame, cast.isConnected && styles.connected]}>
+        <NativeCastButton
+          accessibilityLabel={label}
+          style={styles.nativeButton}
+          tintColor={cast.isConnected ? colors.accent : colors.textMuted}
+        />
       </View>
-      {showLabel ? <Text numberOfLines={1} style={styles.label}>{isPlaying ? 'TV' : 'TV'}</Text> : null}
-    </Pressable>
+      {showLabel ? (
+        <Text numberOfLines={1} style={[styles.label, cast.isConnected && styles.connectedLabel]}>
+          {label}
+        </Text>
+      ) : null}
+    </View>
   );
 }
 
@@ -38,26 +54,33 @@ const styles = StyleSheet.create({
   control: {
     minWidth: 44,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'center'
   },
   iconFrame: {
     width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radii.round,
+    borderRadius: radii.round
+  },
+  connected: {
+    backgroundColor: 'rgba(169,152,255,0.14)'
+  },
+  nativeButton: {
+    width: 30,
+    height: 30
   },
   label: {
     ...typography.caption,
     maxWidth: 78,
     color: colors.textDim,
     marginTop: spacing.xs,
-    textAlign: 'center',
+    textAlign: 'center'
+  },
+  connectedLabel: {
+    color: colors.accent
   },
   pressed: {
-    opacity: 0.68,
-  },
-  disabled: {
-    opacity: 0.4,
-  },
+    opacity: 0.68
+  }
 });
