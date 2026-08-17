@@ -22,6 +22,8 @@ interface PlayerValue {
   repeat: RepeatMode;
   error: string | null;
   sleepEndsAt: number | null;
+  tvShareVisible: boolean;
+  setTvShareVisible: (visible: boolean) => void;
   playTracks: (trackIds: string[], startIndex?: number, label?: string) => void;
   playTrack: (trackId: string, label?: string) => void;
   toggle: () => void;
@@ -76,6 +78,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [audioError, setAudioError] = useState<string | null>(null);
   const [loadRevision, setLoadRevision] = useState(0);
   const [sleepEndsAt, setSleepEndsAt] = useState<number | null>(null);
+  const [tvShareVisible, setTvShareVisible] = useState(false);
   const shouldAutoplay = useRef(false);
   const lastLogged = useRef<string | null>(null);
   const restored = useRef(false);
@@ -274,6 +277,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     repeat,
     error: status.error ?? audioError,
     sleepEndsAt,
+    tvShareVisible,
+    setTvShareVisible,
     playTracks,
     playTrack: (trackId, label = 'Reproduciendo') => playTracks([trackId], 0, label),
     toggle: () => {
@@ -324,7 +329,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     },
     clearUpcoming: () => setQueue((currentQueue) => currentQueue.slice(0, index + 1)),
     setSleepTimer: (minutes) => setSleepEndsAt(minutes ? Date.now() + minutes * 60_000 : null)
-  }), [audio, audioError, catalog?.tracks, contextLabel, current, getTrack, index, next, playTracks, previous, queue, repeat, shuffle, sleepEndsAt, status]);
+  }), [audio, audioError, catalog?.tracks, contextLabel, current, getTrack, index, next, playTracks, previous, queue, repeat, shuffle, sleepEndsAt, status, tvShareVisible]);
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
 }
