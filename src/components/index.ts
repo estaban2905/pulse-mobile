@@ -11,4 +11,3 @@ export { PlayerControls } from './player/PlayerControls';
 export { ProgressBar } from './player/ProgressBar';
 export { SongSheetModal } from './player/SongSheetModal';
 export { TrackActionsModal } from './player/TrackActionsModal';
-export { TvCastButton } from './player/TvCastButton';

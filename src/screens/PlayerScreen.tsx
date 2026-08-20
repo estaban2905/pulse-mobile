@@ -11,8 +11,7 @@ import {
   Screen,
   ScreenHeader,
   SongSheetModal,
-  TrackActionsModal,
-  TvCastButton
+  TrackActionsModal
 } from '../components';
 import { useCatalog } from '../contexts/CatalogContext';
 import { useLibrary } from '../contexts/LibraryContext';
@@ -80,13 +79,7 @@ export function PlayerScreen() {
         title={player.contextLabel}
         onBack={() => goBackOrReplace('/')}
         right={
-          // El selector de dispositivos vive aquí y no en la fila de utilidades
-          // porque en Android el botón lo dibuja el propio módulo de Cast: es
-          // suyo, y tiene que estar donde el sistema espera encontrarlo.
-          <View style={styles.headerActions}>
-            <TvCastButton />
-            <IconButton name="ellipsis-horizontal" onPress={() => setActionsVisible(true)} accessibilityLabel="Más opciones" />
-          </View>
+          <IconButton name="ellipsis-horizontal" onPress={() => setActionsVisible(true)} accessibilityLabel="Más opciones" />
         }
       />
 
@@ -232,8 +225,7 @@ const styles = StyleSheet.create({
   trackCopy: { flex: 1 },
   trackTitle: { color: colors.text, fontSize: 23, fontWeight: '800', letterSpacing: -0.4 },
   artist: { ...typography.body, color: colors.textMuted, marginTop: spacing.xs },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  utilityRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: spacing.md },
+    utilityRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: spacing.md },
   // `flex` y no un ancho fijo: con cuatro utilidades, 90 puntos cada una se
   // salían de la pantalla en los teléfonos de 360 de ancho.
   utilityItem: { flex: 1, alignItems: 'center' },

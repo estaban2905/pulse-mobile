@@ -1,7 +1,6 @@
 import React from 'react';
 import { AuthProvider } from '../contexts/AuthContext';
 import { CatalogProvider } from '../contexts/CatalogContext';
-import { CastProvider } from '../contexts/CastContext';
 import { LibraryProvider } from '../contexts/LibraryContext';
 import { PlayerProvider } from '../contexts/PlayerContext';
 import { SettingsProvider } from '../contexts/SettingsContext';
@@ -17,11 +16,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       <CatalogProvider>
         <SettingsProvider>
           <LibraryProvider>
-            <CastProvider>
-              <PlayerProvider>
-                {children}
-              </PlayerProvider>
-            </CastProvider>
+            <PlayerProvider>
+              {children}
+            </PlayerProvider>
           </LibraryProvider>
         </SettingsProvider>
       </CatalogProvider>

@@ -102,14 +102,6 @@ export function SettingsScreen() {
         />
       </Group>
 
-      <Group title="Televisores">
-        <SettingRow
-          icon="tv-outline"
-          title="Vincular un televisor"
-          description="Para televisores sin Google Cast, como Samsung o LG."
-          onPress={() => router.push('/tv')}
-        />
-      </Group>
 
       <Group title="Reproducción">
         <SettingRow

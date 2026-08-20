@@ -42,15 +42,6 @@
       ],
       "expo-router",
       "expo-secure-store",
-      [
-        "react-native-google-cast",
-        {
-          "receiverAppId": "F7B92831",
-          "expandedController": true,
-          "iosStartDiscoveryAfterFirstTapOnCastButton": true,
-          "iosSuspendSessionsWhenBackgrounded": false
-        }
-      ],
       "expo-status-bar",
       "expo-font",
       [
