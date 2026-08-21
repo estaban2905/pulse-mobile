@@ -5,6 +5,7 @@ import { Chip, Screen, ScreenHeader, SettingRow } from '../components';
 import { useSettings } from '../contexts/SettingsContext';
 import { colors, radii, spacing, typography } from '../theme';
 import { goBackOrReplace } from '../navigation/goBack';
+import { openScreenMirroring } from '../utils/screenMirroring';
 import type { AudioSettings } from '../types/app';
 
 type Quality = AudioSettings['playbackQuality'];
@@ -123,6 +124,13 @@ export function SettingsScreen() {
           title="Permitir contenido explícito"
           description="Muestra y reproduce canciones marcadas como explícitas."
           right={<Toggle label="Permitir contenido explícito" value={settings.allowExplicit} onChange={(value) => setSetting('allowExplicit', value)} />}
+        />
+        <View style={styles.divider} />
+        <SettingRow
+          icon="tv-outline"
+          title="Ver en la TV"
+          description="Duplica la pantalla del teléfono en el televisor."
+          onPress={() => void openScreenMirroring()}
         />
       </Group>
 

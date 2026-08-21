@@ -19,6 +19,7 @@ import { usePlayer } from '../contexts/PlayerContext';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 import { goBackOrReplace } from '../navigation/goBack';
 import { resolveTrackCoverUrl } from '../utils/artwork';
+import { openScreenMirroring } from '../utils/screenMirroring';
 
 const timerOptions: Array<{ label: string; minutes: number | null }> = [
   { label: '15 minutos', minutes: 15 },
@@ -130,6 +131,14 @@ export function PlayerScreen() {
               accessibilityLabel="Ver la letra y los acordes"
             />
             <Text style={styles.utilityLabel}>Letra</Text>
+          </View>
+          <View style={styles.utilityItem}>
+            <IconButton
+              name="tv-outline"
+              onPress={() => void openScreenMirroring()}
+              accessibilityLabel="Ver en la televisión"
+            />
+            <Text style={styles.utilityLabel}>TV</Text>
           </View>
           <View style={styles.utilityItem}>
             <IconButton
